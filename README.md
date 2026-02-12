@@ -1,8 +1,9 @@
 # Interactive Scenario Modeller
 
-A small, extensible scenario modeller library for decarbonisation scenarios. This library provides a structured framework to simulate complex decarbonisation interventions (e.g., solar rollouts, energy upgrades) with realistic constraints like budgets, grid capacity, planning rules, and timing. It enables real-time decision-making with immediate feedback on complex trade-offs.
+This library provides a structured framework to simulate complex decarbonisation interventions (e.g., solar rollouts, energy upgrades) with realistic constraints like budgets, grid capacity, planning rules, and timing. It enables real-time decision-making with immediate feedback on complex trade-offs.
 
-Example: Local Authority Housing Decarbonisation
+Example: Local Authority Housing Decarbonisation.
+
 A council needs to retrofit 10,000 social housing units with heat pumps but faces constraints:
 - £50M budget over 5 years
 - Grid capacity limits in certain districts  
@@ -10,6 +11,7 @@ A council needs to retrofit 10,000 social housing units with heat pumps but face
 - Planning permission delays in conservation areas
 
 Therefore, policymakers can:
+
 1. Adjust budget allocations annually and instantly see impact on deployment
 2. Test "what if" scenarios: "What if we prioritize fuel-poor neighborhoods first?"  
 3. Visualize real-time trade-offs between carbon reduction vs. social equity
