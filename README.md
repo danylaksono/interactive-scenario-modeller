@@ -18,6 +18,26 @@ Therefore, policymakers can:
 4. Immediately see how grid upgrades unlock additional deployment potential
 5. Iterate on policy combinations in meetings rather than waiting for new reports
 
+
+## The Three Main Functions (Principal Predicates)
+
+The Scenario Modeller (centered around the Intervention primitive) is designed to simulate decarbonization pathways by applying changes to a building stock over time. Its design is governed by three primary functional stages and a core philosophy of flexibility and data-agnosticism.
+
+Every intervention is defined by three core functions that run iteratively for each year of the simulation:
+
+1. **Filter**: Determines eligibility. It answers the question: "Which buildings are candidates for this intervention right now?" For example, you might filter for buildings with an EPC rating below 'C', or those located in a specific deprivation decile.
+2. **Prioritise**: Determines order. It answers the question: "In what order should we process the eligible buildings?" This is critical when resources (like budget or installer capacity) are limited. Common strategies include prioritizing by cost-effectiveness (emissions reduction per £ spent) or technical suitability.
+3. **Upgrade**: Determines impact. It answers the question: "What change is applied, and what are the results?" This function performs the actual modification (e.g., installing a heat pump) and returns the metrics for that action, such as installation cost, energy savings, and CO2 reduction.
+
+## The Philosophy of the Modeller
+
+The philosophy of the library focuses on making complex energy planning logic transparent, reusable, and adaptable:
+
+* **The Facet Adapter Pattern (Data Agnosticism)**: The modeller does not care about the underlying data format (CSV, JSON, SQL, etc.). By using "Facet Adapters," it can interface with any data source that implements a simple row-and-column interface. This decouples the modelling logic from data engineering.
+* **Functional Expressiveness (Predicate-Based Control)**: Instead of using rigid configuration files, the modeller uses high-level functions (predicates). This allows planners to express complex, real-world logic—such as "only install heat pumps if the building is already well-insulated"—directly in code.
+* **Minimal Core with Extensibility**: The library follows a "lean core" approach. Specialized logic (like grid constraints or specific technology costs) is handled through a Predicate Registry and Plugin System. This allows teams to build a shared library of reusable "building blocks" for different scenarios.
+* **Transparency and Testability**: By breaking down simulations into the discrete Filter-Prioritise-Upgrade steps, the modeller moves away from "black box" simulations. Each stage can be individually tested and audited, making the resulting energy plans more robust and easier to explain to stakeholders.
+
 ## Quickstart
 
 ```bash
