@@ -42,12 +42,16 @@ describe('Plugin bundle installers', () => {
         name: `bundle-grid-seq-${suffix}`,
         defaultRequiredIntervention: 'phase-1',
       },
+      generationHeadroomAllocation: { name: `bundle-grid-headroom-${suffix}` },
+      gridEnergyBalanceReporting: { name: `bundle-grid-balance-${suffix}` },
     });
 
     expect(typeof getPlugin(social.fuelPovertyPriority.name)?.constraint).toBe('function');
     expect(typeof getPlugin(policy.policyTimelineValidator.name)?.constraint).toBe('function');
     expect(typeof getPlugin(grid.substationCapacityGate.name)?.constraint).toBe('function');
     expect(typeof getPlugin(grid.sequentialEnablement.name)?.constraint).toBe('function');
+    expect(typeof getPlugin(grid.generationHeadroomAllocation.name)?.constraint).toBe('function');
+    expect(typeof getPlugin(grid.gridEnergyBalanceReporting.name)?.upgrade).toBe('function');
 
     const facet = arrayAdapter([
       {
@@ -99,6 +103,8 @@ describe('Plugin bundle installers', () => {
       grid: {
         substationCapacityGate: { name: `all-grid-cap-${suffix}` },
         sequentialEnablement: { name: `all-grid-seq-${suffix}` },
+        generationHeadroomAllocation: { name: `all-grid-headroom-${suffix}` },
+        gridEnergyBalanceReporting: { name: `all-grid-balance-${suffix}` },
       },
       transport: {
         evLoadInteraction: { name: `all-transport-ev-${suffix}` },
@@ -111,6 +117,8 @@ describe('Plugin bundle installers', () => {
 
     expect(all.financial.budgetSpendTracker.exportRef).toBe(`all-budget-${suffix}:upgrade`);
     expect(all.grid.sequentialEnablement.exportRef).toBe(`all-grid-seq-${suffix}:constraint`);
+    expect(all.grid.generationHeadroomAllocation.exportRef).toBe(`all-grid-headroom-${suffix}:constraint`);
+    expect(all.grid.gridEnergyBalanceReporting.exportRef).toBe(`all-grid-balance-${suffix}:upgrade`);
     expect(all.transport.evLoadInteraction.exportRef).toBe(`all-transport-ev-${suffix}:constraint`);
     expect(all.transport.transportCorridorConstraint.exportRef).toBe(`all-transport-corridor-${suffix}:constraint`);
     expect(all.risk.volatilityScenario.exportRef).toBe(`all-risk-volatility-${suffix}:upgrade`);

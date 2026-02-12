@@ -16,8 +16,12 @@ import {
 import {
   createSubstationCapacityGatePlugin,
   createSequentialEnablementPlugin,
+  createGenerationHeadroomAllocationPlugin,
+  createGridEnergyBalanceReportingPlugin,
   type SubstationCapacityGatePluginOptions,
   type SequentialEnablementPluginOptions,
+  type GenerationHeadroomAllocationPluginOptions,
+  type GridEnergyBalanceReportingPluginOptions,
 } from "./grid";
 import {
   createCostBenefitPrioritiserPlugin,
@@ -75,6 +79,8 @@ export type PolicyBundleInstallOptions = {
 export type GridBundleInstallOptions = {
   substationCapacityGate?: SubstationCapacityGatePluginOptions;
   sequentialEnablement?: SequentialEnablementPluginOptions;
+  generationHeadroomAllocation?: GenerationHeadroomAllocationPluginOptions;
+  gridEnergyBalanceReporting?: GridEnergyBalanceReportingPluginOptions;
 };
 
 export type OptimizationBundleInstallOptions = {
@@ -179,12 +185,18 @@ export function installGridPlugins(
 ): {
   substationCapacityGate: InstalledPluginRef;
   sequentialEnablement: InstalledPluginRef;
+  generationHeadroomAllocation: InstalledPluginRef;
+  gridEnergyBalanceReporting: InstalledPluginRef;
 } {
   const substationCapacityGate = createSubstationCapacityGatePlugin(options.substationCapacityGate);
   const sequentialEnablement = createSequentialEnablementPlugin(options.sequentialEnablement);
+  const generationHeadroomAllocation = createGenerationHeadroomAllocationPlugin(options.generationHeadroomAllocation);
+  const gridEnergyBalanceReporting = createGridEnergyBalanceReportingPlugin(options.gridEnergyBalanceReporting);
 
   registerPlugin(substationCapacityGate);
   registerPlugin(sequentialEnablement);
+  registerPlugin(generationHeadroomAllocation);
+  registerPlugin(gridEnergyBalanceReporting);
 
   return {
     substationCapacityGate: {
@@ -194,6 +206,14 @@ export function installGridPlugins(
     sequentialEnablement: {
       name: sequentialEnablement.manifest.name,
       exportRef: `${sequentialEnablement.manifest.name}:constraint`,
+    },
+    generationHeadroomAllocation: {
+      name: generationHeadroomAllocation.manifest.name,
+      exportRef: `${generationHeadroomAllocation.manifest.name}:constraint`,
+    },
+    gridEnergyBalanceReporting: {
+      name: gridEnergyBalanceReporting.manifest.name,
+      exportRef: `${gridEnergyBalanceReporting.manifest.name}:upgrade`,
     },
   };
 }

@@ -112,3 +112,6 @@ Low priority
 Notes
 - Keep library small and dependency-free where possible
 - Tests should validate parity with original DecarbV2 outputs for a few representative seeds
+- Additional grid modelling plugins implemented:
+	- generation headroom allocation (utility-scale renewables export gating)
+	- grid energy balance reporting (total demand/generation requirement and remaining headroom)

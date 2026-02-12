@@ -62,6 +62,8 @@ Plugin Bundles Available
 - Grid bundle
   - Substation capacity gate (constraint)
   - Sequential enablement (constraint)
+  - Generation headroom allocation (constraint)
+  - Grid energy balance reporting (upgrade)
 - Timeseries bundle
   - Seasonal demand gate (constraint)
   - Load profile scoring (prioritiser)
@@ -97,6 +99,14 @@ When to Use Each Built-in Plugin
 - Substation Capacity Gate
   - Use for grid constraints with per-year or flat capacities
   - Tracks reserved load in state and blocks over-capacity selections
+
+- Generation Headroom Allocation
+  - Use for utility-scale wind/ground-mount PV export allocation at substation level
+  - Tracks allocated export headroom and blocks over-allocation per year/substation
+
+- Grid Energy Balance Reporting
+  - Use to calculate total energy requirement (demand + generation) and remaining headroom
+  - Tracks yearly and per-substation balances in scenario state for reporting
 
 - Load Profile Scoring
   - Use for ranking candidates by peak-demand and flexibility contribution
@@ -185,6 +195,10 @@ Use-Case Mapping Guide
   - Use policy timeline validator + policy-evolution predicate/preset
 - Grid-constrained adoption
   - Use substation capacity gate
+- Utility-scale generation allocation
+  - Use generation headroom allocation for export-capacity gating by substation
+- Demand-headroom balance reporting
+  - Use grid energy balance reporting to monitor total requirement and remaining headroom
 - Seasonal demand constrained adoption
   - Use seasonal demand gate + load profile scoring
 - Phase dependencies

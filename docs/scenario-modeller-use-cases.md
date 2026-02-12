@@ -646,6 +646,87 @@ const dependentIntervention = new Intervention('Dependent rollout', {
 
 All field names and state keys are configurable via plugin options.
 
+### Grid Constraint Plugin: Generation Headroom Allocation
+
+Use this plugin to allocate substation export headroom for utility-scale renewables (e.g., wind, ground-mount PV).
+
+```typescript
+import {
+  createGenerationHeadroomAllocationPlugin,
+  registerPlugin,
+  Intervention,
+} from 'interactive-scenario-modeller';
+
+registerPlugin(createGenerationHeadroomAllocationPlugin({
+  name: 'grid-generation-headroom-allocation',
+}));
+
+const generationIntervention = new Intervention('Utility-scale generation allocation', {
+  facet,
+  startYear: 2026,
+  endYear: 2028,
+  filter: 'grid-generation-headroom-allocation:constraint',
+  init: (context) => {
+    context.state.substationGenerationHeadroom = {
+      2026: { S1: 1000, S2: 650 },
+      2027: { S1: 1100, S2: 700 },
+      2028: { S1: 1200, S2: 750 },
+    };
+  },
+  upgrade: () => ({ allocated: true }),
+});
+```
+
+**Defaults**
+
+- Substation field: `substationId`
+- Requested export field: `generationExportKw`
+- Headroom state key: `substationGenerationHeadroom`
+- Allocation state key: `substationGenerationAllocated`
+
+### Grid Upgrade Plugin: Energy Balance Reporting
+
+Use this plugin to compute total energy requirement and remaining substation headroom while scenarios run.
+
+```typescript
+import {
+  createGridEnergyBalanceReportingPlugin,
+  registerPlugin,
+  Intervention,
+} from 'interactive-scenario-modeller';
+
+registerPlugin(createGridEnergyBalanceReportingPlugin({
+  name: 'grid-energy-balance-reporting',
+}));
+
+const balanceIntervention = new Intervention('Grid energy balance', {
+  facet,
+  startYear: 2026,
+  endYear: 2028,
+  filter: () => true,
+  init: (context) => {
+    context.state.substationGenerationHeadroom = {
+      S1: 1500,
+      S2: 900,
+    };
+  },
+  upgrade: 'grid-energy-balance-reporting:upgrade',
+});
+```
+
+**Outputs/state tracked**
+
+- Per-building metrics:
+  - `demandRequirementKw`
+  - `generationRequirementKw`
+  - `totalEnergyRequirementKw`
+  - `remainingHeadroomKw`
+- Scenario state aggregate:
+  - `gridEnergyBalance[year].totalDemandKw`
+  - `gridEnergyBalance[year].totalGenerationKw`
+  - `gridEnergyBalance[year].totalRequirementKw`
+  - `gridEnergyBalance[year].bySubstation`
+
 ### One-Call Plugin Bundle Installation
 
 If scenario apps need a standard stack quickly, install bundled plugins in one step:

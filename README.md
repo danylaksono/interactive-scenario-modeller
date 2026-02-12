@@ -86,6 +86,8 @@ Plugin export references included:
 
 - `createSubstationCapacityGatePlugin(opts)` — reusable `constraint` plugin to gate upgrades by per-substation capacity
 - `createSequentialEnablementPlugin(opts)` — reusable `constraint` plugin for prerequisite intervention gating
+- `createGenerationHeadroomAllocationPlugin(opts)` — reusable `constraint` plugin for allocating substation export headroom to utility-scale renewables
+- `createGridEnergyBalanceReportingPlugin(opts)` — reusable `upgrade` plugin to calculate demand+generation requirements and remaining headroom
 
 ## Optimization Plugins
 
@@ -147,6 +149,8 @@ const template = createScenarioTemplate();
 
 See the end-to-end example in [examples/scenario-template.ts](examples/scenario-template.ts).
 For staged big-data runs, see [examples/large-dataset-workflow.ts](examples/large-dataset-workflow.ts).
+For grid export allocation and demand/headroom balance with mock data, see [examples/grid-headroom-balance-workflow.ts](examples/grid-headroom-balance-workflow.ts).
+For a three-stage integrated flow (generation allocation, demand-side upgrades, then EV transport interaction), see [examples/integrated-grid-two-stage-workflow.ts](examples/integrated-grid-two-stage-workflow.ts).
 
 ## Risk Helpers
 
