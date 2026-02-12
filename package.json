@@ -1,0 +1,45 @@
+{
+    "name": "interactive-scenario-modeller",
+    "version": "0.1.0",
+    "type": "module",
+    "description": "A small, extensible scenario modeller library for decarbonisation scenarios",
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "test": "vitest",
+        "lint": "eslint . --ext .ts",
+        "prepare": "npm run build"
+    },
+    "tsup": {
+        "entry": [
+            "src/index.ts"
+        ],
+        "format": [
+            "cjs",
+            "esm"
+        ],
+        "dts": true,
+        "outDir": "dist"
+    },
+    "files": [
+        "dist"
+    ],
+    "keywords": [
+        "scenario",
+        "modelling",
+        "decarbonisation"
+    ],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "tsup": "^6.0.0",
+        "typescript": "^5.0.0",
+        "vitest": "^1.0.0",
+        "eslint": "^8.0.0",
+        "prettier": "^2.0.0",
+        "@types/node": "^20.0.0"
+    }
+}

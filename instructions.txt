@@ -1,0 +1,261 @@
+interactive-scenario-modeller — LLM Instructions
+
+Purpose
+- Use this library to model multi-year decarbonisation scenarios with reusable interventions, predicates, and plugins.
+- Prefer string-based plugin/predicate references in scenarios that need persistence/serialization.
+- Use the plugin ecosystem to compose constraints, prioritisation, upgrades, and validation logic by use case.
+
+Core Concepts
+1) Intervention
+- Main simulation unit.
+- Configure with: facet, startYear/endYear, init hooks, filter, prioritise, upgrade.
+- filter decides eligibility, prioritise sets order, upgrade applies effect/metrics.
+
+2) Facet
+- Provide building rows via arrayAdapter(data) or custom adapter with getRowCount/getRow.
+
+3) Context (SimulationContext)
+- context.year: current simulation year
+- context.state: mutable scenario state shared across years
+- context.resolvePredicate(name): resolve registered predicate by name
+- context.resolvePlugin(name): resolve registered plugin by name
+
+4) Registry and Plugins
+- registerPredicate(name, fn): register reusable predicate function
+- registerPlugin(plugin): register plugin package with manifest and handlers
+- String references in interventions:
+  - Predicate by name: "scenario:budgetConstraint"
+  - Plugin export by name: "financial-budget-spend-tracker:upgrade"
+
+Recommended Execution Pattern
+1) Create facet
+2) Install required plugin bundles or specific plugins
+3) Build scenario defaults with createScenarioTemplate(...) when appropriate
+4) Create one or more Intervention instances
+5) Run simulate() or use SimulationRunner for multi-step flows
+6) Inspect result.metrics, result.state, and result.buildings
+
+Quick Start (Preferred Modern Flow)
+1) Install bundles
+- installFinancialPlugins()
+- installSocialPlugins()
+- installPolicyPlugins()
+- installGridPlugins()
+- or installAllPlugins()
+
+2) Optionally create a scenario template
+- createScenarioTemplate({ stateDefaults, pluginOptions })
+- Use template.withInit(...) in intervention init for reusable state wiring
+
+3) Use plugin export refs in interventions
+- filter: bundleRef.constraint exportRef
+- upgrade: bundleRef.upgrade exportRef
+
+Plugin Bundles Available
+- Financial bundle
+  - Budget spend tracker (upgrade)
+  - Financing model (upgrade)
+- Social bundle
+  - Fuel poverty priority (constraint)
+- Policy bundle
+  - Policy timeline validator (constraint)
+- Grid bundle
+  - Substation capacity gate (constraint)
+  - Sequential enablement (constraint)
+- Timeseries bundle
+  - Seasonal demand gate (constraint)
+  - Load profile scoring (prioritiser)
+  - Technology coupling (upgrade)
+
+Risk helpers available
+- runSensitivityAnalysis(opts)
+- runMonteCarloAnalysis(opts)
+
+When to Use Each Built-in Plugin
+- Budget Spend Tracker
+  - Use when annual spend accumulation must be standardized
+  - Reads cost field, updates state budget-spend key, emits cost metrics
+
+- Financing Model (cash/lease/PPA)
+  - Use for scenario economics and annualized financing comparisons
+  - Emits annualPayment, npvCost, modelType (or mapped output keys)
+
+- Fuel Poverty Priority
+  - Use for social + carbon blended targeting
+  - Weighted threshold filtering with optional state overrides
+
+- Policy Timeline Validator
+  - Use as a precondition gate to validate policy timeline shape
+  - Can enforce required year coverage
+  - Note: filter errors are logged by Intervention and result in skipped buildings
+
+- Substation Capacity Gate
+  - Use for grid constraints with per-year or flat capacities
+  - Tracks reserved load in state and blocks over-capacity selections
+
+- Load Profile Scoring
+  - Use for ranking candidates by peak-demand and flexibility contribution
+  - Best paired with seasonal demand gate or capacity constraints
+
+- Technology Coupling
+  - Use to adjust effective demand/carbon outcomes for battery and heat-pump uptake assumptions
+  - Best paired with seasonal and grid constraints to capture net-system effects
+
+- Sequential Enablement
+  - Use for cross-intervention dependencies
+  - Requires prerequisite completion via building fields or state map
+
+How to Build Scenarios Reliably
+- Keep context.state explicit and versioned by scenario if needed.
+- Use deterministic prioritisation where reproducibility matters.
+- Use string plugin refs in persisted scenario configs.
+- Keep one plugin focused on one responsibility (constraint OR upgrade).
+- Write init hooks that set only missing state defaults unless override is intended.
+
+How to Expand the Plugin Ecosystem
+
+A) Design Checklist (before coding)
+1) Define plugin kind: constraint, upgrade, prioritiser, etc.
+2) Define minimal required building fields.
+3) Define required state keys and optional defaults.
+4) Define output metric contract for downstream reporting.
+5) Choose clear plugin name and export key (usually "constraint" or "upgrade").
+
+B) Implementation Steps
+1) Create plugin file in appropriate domain folder:
+   - src/plugins/financial/
+   - src/plugins/social/
+   - src/plugins/policy/
+   - src/plugins/grid/
+   - or new domain folder if justified
+2) Implement factory function:
+   - createXPlugin(options) => PluginRegistration
+3) Add manifest:
+   - name, version, kind, description, entry, compat, trusted, exports
+4) Add handler logic:
+   - constraint(building, context) => boolean
+   - upgrade(building, context) => metrics object
+5) Export from domain index.ts and from src/index.ts
+6) Add tests:
+   - plugin registration test
+   - positive behavior test
+   - edge-case test(s)
+   - intervention simulate integration test via string reference
+7) Add docs:
+   - README plugin listing
+   - use-case cookbook entry in docs/scenario-modeller-use-cases.md
+
+C) Quality Rules
+- Keep plugins pure unless state writes are intentional and documented.
+- Validate/sanitize numeric inputs (NaN, strings, missing fields).
+- Support configurable field/state keys for interoperability.
+- Keep default behavior predictable and simple.
+- Avoid hidden side effects across unrelated state keys.
+
+D) Naming and Reference Conventions
+- Name plugin by domain + behavior (example: "grid-substation-capacity-gate").
+- Use explicit export names in refs ("plugin-name:constraint", "plugin-name:upgrade").
+- For bundled installs, always use returned exportRef values instead of rebuilding strings manually.
+
+Use-Case Mapping Guide
+- Budget-constrained rollout
+  - Use budget constraint preset + budget spend tracker upgrade
+- Financing comparison (cash/lease/PPA)
+  - Use financing model upgrade and compare npvCost outputs
+- Fuel poverty targeting with carbon co-benefit
+  - Use fuel poverty priority constraint
+- Policy compliance gates
+  - Use policy timeline validator + policy-evolution predicate/preset
+- Grid-constrained adoption
+  - Use substation capacity gate
+- Seasonal demand constrained adoption
+  - Use seasonal demand gate + load profile scoring
+- Phase dependencies
+  - Use sequential enablement
+
+Persistence and Interoperability Guidance
+- Persist intervention config with string refs for filter/prioritise/upgrade.
+- Persist scenario state keys explicitly (budgets, policies, capacities, completion maps).
+- Reinstall bundles/plugins before replaying persisted scenarios.
+
+Large Dataset Guidance
+- Current simulation path is in-memory per intervention/year; memory pressure grows with:
+  - row count,
+  - number of columns copied into buildings,
+  - number of interventions run in sequence.
+- For large datasets, always use `setupBuilding` to project only required fields.
+- Prefer narrow plugin field contracts and avoid carrying unused columns in scenario state.
+- Run sensitivity/Monte Carlo on filtered subsets first, then scale to full stock.
+- Use scenario template defaults and bundle refs to avoid expensive per-run setup logic.
+
+Large Dataset Operational Playbook (Required for big runs)
+1) Profile first
+- Compute row count and file size before running scenarios.
+- Treat datasets around >=50k rows or >=25MB as “large” for default in-memory workflows.
+
+2) Minimize row payload in setup
+- In `setupBuilding`, include only fields required by active filter/prioritise/upgrade plugins.
+- Avoid copying full CSV rows into simulation buildings.
+- Normalize key numeric fields once in setup; avoid repeated parsing in predicates.
+
+3) Stage execution
+- Stage A: smoke test on 1k–5k sampled rows.
+- Stage B: medium run on 10k–25k rows.
+- Stage C: full run after checking memory/runtime trends.
+- Keep plugin stack identical across stages to preserve behavior comparability.
+
+4) Control intervention complexity
+- Prefer fewer interventions per run; chain only when needed.
+- Use `SimulationRunner` for explicit sequencing and inspect intermediate outputs.
+- Avoid broad `includeUntouched` outputs on very large runs unless required.
+
+5) Risk-helper strategy at scale
+- Use `runSensitivityAnalysis` with narrow parameter grids first.
+- Use `runMonteCarloAnalysis` with small run counts initially (e.g., 10-25), then increase.
+- Do not combine large parameter grids and high Monte Carlo runs in the same first pass.
+
+6) State hygiene
+- Keep `context.state` small and structured.
+- Store only aggregate counters/maps required for constraints and metrics.
+- Avoid storing whole-building arrays in state during simulation.
+
+7) Validate before trusting results
+- Track per-year selected counts and key aggregates (budget spent, capacity loads, carbon totals).
+- Compare sampled-run distributions against full-run outputs for drift detection.
+- Re-run with fixed assumptions to confirm deterministic behavior where expected.
+
+8) Winchester-specific recommendation
+- For `winchester_building_stock.csv` (~72k rows, ~53MB), use staged execution and field projection by default.
+- Run one baseline full scenario first, then add plugin families incrementally (optimization -> geographic -> timeseries -> risk).
+
+Common Pitfalls and Fixes
+- Pitfall: plugin not found at runtime
+  - Fix: ensure registerPlugin/install bundle runs before creating intervention
+- Pitfall: no buildings selected unexpectedly
+  - Fix: inspect filter constraints and state defaults; log candidate scores
+- Pitfall: numeric fields stored as strings
+  - Fix: parse numbers safely inside plugin logic
+- Pitfall: policy validator expected to throw globally
+  - Fix: current Intervention catches filter errors and skips buildings; test accordingly
+
+Minimal LLM Workflow Template
+1) Identify scenario objective and constraints.
+2) Select existing plugins first (reuse > new code).
+3) Install bundles and build scenario template defaults.
+4) Create intervention with string refs.
+5) Run simulate and inspect metrics/state.
+6) If capability gap exists, implement one focused plugin + tests + docs.
+
+Current High-Value Extension Targets
+- Enhanced financial sensitivity plugin (multi-rate scenarios)
+- Monte Carlo risk plugin wrapper
+- Geographic clustering prioritiser
+- EV-load interaction constraint plugin
+- Policy incentive effectiveness upgrade plugin
+
+Definition of Done for Any New Plugin
+- Exported and discoverable from package entrypoint
+- Unit + integration tests passing
+- Documented in README and scenario cookbook
+- Works with string-based intervention references
+- Build and type generation succeed
