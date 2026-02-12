@@ -6,7 +6,9 @@ import {
   installFinancialPlugins,
   installGridPlugins,
   installPolicyPlugins,
+  installRiskPlugins,
   installSocialPlugins,
+  installTransportPlugins,
   Intervention,
 } from '../src';
 
@@ -98,9 +100,43 @@ describe('Plugin bundle installers', () => {
         substationCapacityGate: { name: `all-grid-cap-${suffix}` },
         sequentialEnablement: { name: `all-grid-seq-${suffix}` },
       },
+      transport: {
+        evLoadInteraction: { name: `all-transport-ev-${suffix}` },
+        transportCorridorConstraint: { name: `all-transport-corridor-${suffix}` },
+      },
+      risk: {
+        volatilityScenario: { name: `all-risk-volatility-${suffix}` },
+      },
     });
 
     expect(all.financial.budgetSpendTracker.exportRef).toBe(`all-budget-${suffix}:upgrade`);
     expect(all.grid.sequentialEnablement.exportRef).toBe(`all-grid-seq-${suffix}:constraint`);
+    expect(all.transport.evLoadInteraction.exportRef).toBe(`all-transport-ev-${suffix}:constraint`);
+    expect(all.transport.transportCorridorConstraint.exportRef).toBe(`all-transport-corridor-${suffix}:constraint`);
+    expect(all.risk.volatilityScenario.exportRef).toBe(`all-risk-volatility-${suffix}:upgrade`);
+  });
+
+  it('installs transport bundle and registers both constraints', () => {
+    const suffix = Date.now();
+    const refs = installTransportPlugins({
+      evLoadInteraction: { name: `bundle-transport-ev-${suffix}` },
+      transportCorridorConstraint: { name: `bundle-transport-corridor-${suffix}` },
+    });
+
+    expect(refs.evLoadInteraction.exportRef).toBe(`bundle-transport-ev-${suffix}:constraint`);
+    expect(refs.transportCorridorConstraint.exportRef).toBe(`bundle-transport-corridor-${suffix}:constraint`);
+
+    expect(typeof getPlugin(refs.evLoadInteraction.name)?.constraint).toBe('function');
+    expect(typeof getPlugin(refs.transportCorridorConstraint.name)?.constraint).toBe('function');
+  });
+
+  it('installs risk bundle and registers volatility upgrade', () => {
+    const suffix = Date.now();
+    const refs = installRiskPlugins({
+      volatilityScenario: { name: `bundle-risk-volatility-${suffix}` },
+    });
+
+    expect(refs.volatilityScenario.exportRef).toBe(`bundle-risk-volatility-${suffix}:upgrade`);
+    expect(typeof getPlugin(refs.volatilityScenario.name)?.upgrade).toBe('function');
   });
 });

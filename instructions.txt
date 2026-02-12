@@ -66,6 +66,11 @@ Plugin Bundles Available
   - Seasonal demand gate (constraint)
   - Load profile scoring (prioritiser)
   - Technology coupling (upgrade)
+- Transport bundle
+  - EV load interaction (constraint)
+  - Transport corridor constraint (constraint)
+- Risk bundle
+  - Volatility scenario (upgrade)
 
 Risk helpers available
 - runSensitivityAnalysis(opts)
@@ -100,6 +105,18 @@ When to Use Each Built-in Plugin
 - Technology Coupling
   - Use to adjust effective demand/carbon outcomes for battery and heat-pump uptake assumptions
   - Best paired with seasonal and grid constraints to capture net-system effects
+
+- EV Load Interaction
+  - Use when EV charging demand should be included in capacity gating logic
+  - Combines baseline EV load projections with per-building EV charging increments
+
+- Transport Corridor Constraint
+  - Use to enforce corridor-level charging rollout requirements and prevent over-delivery
+  - Tracks delivered charging units by corridor/year in scenario state
+
+- Volatility Scenario
+  - Use to inject year/season multipliers into energy price assumptions
+  - Emits volatility-adjusted price and selected multiplier for downstream metrics
 
 - Sequential Enablement
   - Use for cross-intervention dependencies
@@ -172,6 +189,10 @@ Use-Case Mapping Guide
   - Use seasonal demand gate + load profile scoring
 - Phase dependencies
   - Use sequential enablement
+- EV transport-grid interaction
+  - Use EV load interaction + transport corridor constraint with grid capacity gates
+- Price volatility modeling
+  - Use volatility scenario plugin and scenario state multipliers by year/season
 
 Persistence and Interoperability Guidance
 - Persist intervention config with string refs for filter/prioritise/upgrade.
@@ -250,7 +271,6 @@ Current High-Value Extension Targets
 - Enhanced financial sensitivity plugin (multi-rate scenarios)
 - Monte Carlo risk plugin wrapper
 - Geographic clustering prioritiser
-- EV-load interaction constraint plugin
 - Policy incentive effectiveness upgrade plugin
 
 Definition of Done for Any New Plugin

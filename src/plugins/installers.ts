@@ -43,6 +43,16 @@ import {
   type LoadProfileScoringOptions,
   type TechnologyCouplingOptions,
 } from "./timeseries";
+import {
+  createEVLoadInteractionPlugin,
+  createTransportCorridorConstraintPlugin,
+  type EVLoadInteractionPluginOptions,
+  type TransportCorridorConstraintOptions,
+} from "./transport";
+import {
+  createVolatilityScenarioPlugin,
+  type VolatilityScenarioPluginOptions,
+} from "./risk";
 
 export type InstalledPluginRef = {
   name: string;
@@ -81,6 +91,8 @@ export type AllBundleInstallOptions = {
   optimization?: OptimizationBundleInstallOptions;
   geographic?: GeographicBundleInstallOptions;
   timeseries?: TimeseriesBundleInstallOptions;
+  transport?: TransportBundleInstallOptions;
+  risk?: RiskBundleInstallOptions;
 };
 
 export type GeographicBundleInstallOptions = {
@@ -93,6 +105,15 @@ export type TimeseriesBundleInstallOptions = {
   seasonalDemandGate?: SeasonalDemandGateOptions;
   loadProfileScoring?: LoadProfileScoringOptions;
   technologyCoupling?: TechnologyCouplingOptions;
+};
+
+export type TransportBundleInstallOptions = {
+  evLoadInteraction?: EVLoadInteractionPluginOptions;
+  transportCorridorConstraint?: TransportCorridorConstraintOptions;
+};
+
+export type RiskBundleInstallOptions = {
+  volatilityScenario?: VolatilityScenarioPluginOptions;
 };
 
 export function installFinancialPlugins(
@@ -274,6 +295,46 @@ export function installTimeseriesPlugins(
   };
 }
 
+export function installTransportPlugins(
+  options: TransportBundleInstallOptions = {},
+): {
+  evLoadInteraction: InstalledPluginRef;
+  transportCorridorConstraint: InstalledPluginRef;
+} {
+  const evLoadInteraction = createEVLoadInteractionPlugin(options.evLoadInteraction);
+  const transportCorridorConstraint = createTransportCorridorConstraintPlugin(options.transportCorridorConstraint);
+
+  registerPlugin(evLoadInteraction);
+  registerPlugin(transportCorridorConstraint);
+
+  return {
+    evLoadInteraction: {
+      name: evLoadInteraction.manifest.name,
+      exportRef: `${evLoadInteraction.manifest.name}:constraint`,
+    },
+    transportCorridorConstraint: {
+      name: transportCorridorConstraint.manifest.name,
+      exportRef: `${transportCorridorConstraint.manifest.name}:constraint`,
+    },
+  };
+}
+
+export function installRiskPlugins(
+  options: RiskBundleInstallOptions = {},
+): {
+  volatilityScenario: InstalledPluginRef;
+} {
+  const volatilityScenario = createVolatilityScenarioPlugin(options.volatilityScenario);
+  registerPlugin(volatilityScenario);
+
+  return {
+    volatilityScenario: {
+      name: volatilityScenario.manifest.name,
+      exportRef: `${volatilityScenario.manifest.name}:upgrade`,
+    },
+  };
+}
+
 export function installAllPlugins(options: AllBundleInstallOptions = {}) {
   return {
     financial: installFinancialPlugins(options.financial),
@@ -283,5 +344,7 @@ export function installAllPlugins(options: AllBundleInstallOptions = {}) {
     optimization: installOptimizationPlugins(options.optimization),
     geographic: installGeographicPlugins(options.geographic),
     timeseries: installTimeseriesPlugins(options.timeseries),
+    transport: installTransportPlugins(options.transport),
+    risk: installRiskPlugins(options.risk),
   };
 }

@@ -673,6 +673,11 @@ Bundle installers available:
 - `installSocialPlugins`
 - `installPolicyPlugins`
 - `installGridPlugins`
+- `installOptimizationPlugins`
+- `installGeographicPlugins`
+- `installTimeseriesPlugins`
+- `installTransportPlugins`
+- `installRiskPlugins`
 - `installAllPlugins`
 
 ### Scenario Template Helper (Bundles + Defaults)
@@ -1023,6 +1028,116 @@ const monteCarlo = runMonteCarloAnalysis({
 ```
 
 Both helpers return scenario/run summaries and can optionally include raw simulation outputs.
+
+### Risk Upgrade Plugin: Volatility Scenario
+
+Use this plugin to inject year/season multipliers into price assumptions for scenario stress testing.
+
+```typescript
+import {
+  createVolatilityScenarioPlugin,
+  registerPlugin,
+  Intervention,
+} from 'interactive-scenario-modeller';
+
+registerPlugin(createVolatilityScenarioPlugin({
+  name: 'risk-volatility-scenario',
+}));
+
+const volatilityIntervention = new Intervention('Volatility-adjusted economics', {
+  facet,
+  startYear: 2026,
+  endYear: 2028,
+  init: (context) => {
+    context.state.volatilitySeasonByYear = {
+      2026: 'winter',
+      2027: 'summer',
+      2028: 'winter',
+    };
+
+    context.state.priceVolatilityMultipliers = {
+      2026: { winter: 1.2, summer: 0.95 },
+      2027: { winter: 1.15, summer: 0.9 },
+      2028: { winter: 1.25, summer: 1.0 },
+      default: 1,
+    };
+  },
+  filter: () => true,
+  upgrade: 'risk-volatility-scenario:upgrade',
+});
+```
+
+**Defaults**
+
+- Input price field: `energyPrice`
+- Output adjusted price: `volatilityAdjustedPrice`
+- Output multiplier: `volatilityMultiplier`
+- Year/season state keys: `volatilityYear`, `volatilitySeasonByYear`
+- Volatility map state key: `priceVolatilityMultipliers`
+
+### Transport Plugins: EV Interaction and Corridor Constraints
+
+Use transport plugins when EV charging demand and corridor rollout obligations must be reflected in scenario selection.
+
+```typescript
+import {
+  createEVLoadInteractionPlugin,
+  createTransportCorridorConstraintPlugin,
+  registerPlugin,
+  Intervention,
+} from 'interactive-scenario-modeller';
+
+registerPlugin(createEVLoadInteractionPlugin({
+  name: 'transport-ev-load-interaction',
+}));
+
+registerPlugin(createTransportCorridorConstraintPlugin({
+  name: 'transport-corridor-constraint',
+  maxOverbuildFactor: 1.1,
+}));
+
+const transportIntervention = new Intervention('Transport-aware rollout', {
+  facet,
+  startYear: 2026,
+  endYear: 2028,
+  init: (context) => {
+    context.state.substationCapacities = {
+      2026: { S1: 120 },
+      2027: { S1: 125 },
+      2028: { S1: 130 },
+    };
+
+    context.state.evBaselineLoad = {
+      2026: { S1: 30 },
+      2027: { S1: 36 },
+      2028: { S1: 42 },
+    };
+
+    context.state.corridorChargingRequirements = {
+      2026: { A34: 12 },
+      2027: { A34: 16 },
+      2028: { A34: 20 },
+    };
+  },
+  filter: 'transport-ev-load-interaction:constraint',
+  upgrade: () => ({ installed: true }),
+});
+```
+
+**EV Load Interaction defaults**
+
+- Segment field: `substationId`
+- Demand increment field: `projectedDemandIncreaseKw`
+- EV demand field: `evChargingDemandKw`
+- Capacity state key: `substationCapacities`
+- Baseline EV state key: `evBaselineLoad`
+
+**Transport Corridor Constraint defaults**
+
+- Corridor field: `transportCorridorId`
+- Delivered units field: `chargingPointsProvided`
+- Requirement state key: `corridorChargingRequirements`
+- Delivered state key: `corridorChargingDelivered`
 
 ### 1. Budget Management Module
 - Annual budget allocation interface

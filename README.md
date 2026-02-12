@@ -1,6 +1,6 @@
-# interactive-scenario-modeller
+# Interactive Scenario Modeller
 
-A small, extensible scenario modeller library for decarbonisation scenarios.
+A small, extensible scenario modeller library for decarbonisation scenarios. This library provides a structured framework to simulate complex decarbonisation interventions (e.g., solar rollouts, energy upgrades) with realistic constraints like budgets, grid capacity, planning rules, and timing.
 
 ## Quickstart
 
@@ -105,6 +105,15 @@ Plugin export references included:
 - `createLoadProfileScoringPlugin(opts)` — reusable `prioritiser` plugin for peak/load-shift/flexibility scoring
 - `createTechnologyCouplingPlugin(opts)` — reusable `upgrade` plugin for battery/heat-pump adjusted demand and carbon effects
 
+## Transport Plugins
+
+- `createEVLoadInteractionPlugin(opts)` — reusable `constraint` plugin that combines baseline EV load and per-building EV charging demand in capacity checks
+- `createTransportCorridorConstraintPlugin(opts)` — reusable `constraint` plugin for corridor-level charging delivery requirements
+
+## Risk Plugins
+
+- `createVolatilityScenarioPlugin(opts)` — reusable `upgrade` plugin that applies year/season volatility multipliers to price metrics
+
 ## Bundle Installers
 
 - `installFinancialPlugins(opts)`
@@ -114,6 +123,8 @@ Plugin export references included:
 - `installOptimizationPlugins(opts)`
 - `installGeographicPlugins(opts)`
 - `installTimeseriesPlugins(opts)`
+- `installTransportPlugins(opts)`
+- `installRiskPlugins(opts)`
 - `installAllPlugins(opts)`
 
 ```ts

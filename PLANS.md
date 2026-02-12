@@ -90,17 +90,17 @@ Low priority
 	- Adjust effective demand/benefit with battery or heat-pump uptake assumptions
 
 ### Wave D: Risk and uncertainty plugins
-1. **Sensitivity Runner Helper**
+1. **Sensitivity Runner Helper** ✅
 	- Run parameter sweeps over named scenario variables
-2. **Monte Carlo Runner Helper**
+2. **Monte Carlo Runner Helper** ✅
 	- Repeat scenarios across random draws with summary statistics
-3. **Volatility Scenario Plugin**
+3. **Volatility Scenario Plugin** ✅
 	- Inject price volatility multipliers by year/season
 
 ### Wave E: Transport and integrated system plugins
-1. **EV Load Interaction Plugin**
+1. **EV Load Interaction Plugin** ✅
 	- Add EV charging demand projections to capacity checks
-2. **Transport Corridor Constraint Plugin**
+2. **Transport Corridor Constraint Plugin** ✅
 	- Prioritize/limit by corridor charging requirements
 
 ### Delivery sequence and checkpoints

@@ -17,6 +17,8 @@ export * from './plugins/grid';
 export * from './plugins/optimization';
 export * from './plugins/geographic';
 export * from './plugins/timeseries';
+export * from './plugins/transport';
+export * from './plugins/risk';
 export * from './plugins/installers';
 export * from './templates/scenario-template';
 export * from './risk';
