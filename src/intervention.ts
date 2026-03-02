@@ -1,4 +1,4 @@
-import { Building, State, Metrics, PropertySpec, PredicateFilter, PredicatePrioritise, PredicateUpgrade, SimulationContext } from "./types";
+import { Entity, Building, State, Metrics, PropertySpec, PredicateFilter, PredicatePrioritise, PredicateUpgrade, PredicateTransform, SimulationContext } from "./types";
 import { buildSimulatedDataFacet } from "./simulated-facet";
 import { getPredicate } from "./registry";
 import { getPlugin } from "./plugin";
@@ -17,14 +17,20 @@ export type InterventionOptions = {
   endYear?: number;
   /** Function returning property specification for inputs/outputs */
   propertySpec?: () => PropertySpec;
-  /** Function to transform facet rows into Building objects */
+  /** Function to transform facet rows into Building/Entity objects */
   setupBuilding?: (row: any, building?: Building) => Building;
-  /** Filter predicate: determines which buildings are eligible for upgrade. Can be a function or a registered name. */
+  /** Alias for setupBuilding. Function to transform facet rows into Entity objects */
+  setupEntity?: (row: any, entity?: Entity) => Entity;
+  /** Filter predicate: determines which entities are eligible for transformation. Can be a function or a registered name. */
   filter?: PredicateFilter;
-  /** Prioritization predicate: determines order of upgrades. Can be a function, a registered name, or "random". */
+  /** Prioritization predicate: determines order of transformations. Can be a function, a registered name, or "random". */
   prioritise?: PredicatePrioritise;
-  /** Upgrade predicate: applies upgrade and returns metric deltas. Can be a function or a registered name. */
+  /** Upgrade predicate: applies transformation and returns metric deltas. Can be a function or a registered name. */
   upgrade?: PredicateUpgrade;
+  /** Alias for upgrade. Transformation predicate: applies change and returns metric deltas. */
+  transform?: PredicateTransform;
+  /** Alias for upgrade. Transformation predicate: applies change and returns metric deltas. */
+  apply?: PredicateTransform;
   /** Initialization hook: called once before simulation starts */
   init?: (context: SimulationContext) => void;
   /** Finalization hook: called once after simulation completes */
@@ -36,7 +42,7 @@ export type InterventionOptions = {
 };
 
 /**
- * Core class for modeling decarbonisation interventions.
+ * Core class for modeling interventions.
  */
 export class Intervention {
   name: string;
@@ -45,7 +51,7 @@ export class Intervention {
   startYear: number | null;
   endYear: number | null;
   propertySpec?: () => PropertySpec;
-  setupBuilding?: (row: any, building?: Building) => Building;
+  setupBuilding?: (row: any, entity?: Entity) => Entity;
   
   private _filter: PredicateFilter;
   private _prioritise: PredicatePrioritise;
@@ -56,7 +62,7 @@ export class Intervention {
   initYear: (year: number, context: SimulationContext, metrics?: Metrics) => void;
   finaliseYear: (year: number, context: SimulationContext, metrics?: Metrics) => void;
   
-  buildings: Building[] | null;
+  entities: Entity[] | null;
   simulatedFacet: any | null;
 
   constructor(name: string, opts: InterventionOptions = {}) {
@@ -66,20 +72,26 @@ export class Intervention {
     this.startYear = opts.startYear ?? null;
     this.endYear = opts.endYear ?? null;
     this.propertySpec = opts.propertySpec;
-    this.setupBuilding = opts.setupBuilding;
+    this.setupBuilding = opts.setupEntity ?? opts.setupBuilding;
     
     this._filter = opts.filter ?? (() => true);
     this._prioritise = opts.prioritise ?? (() => 0);
-    this._upgrade = opts.upgrade ?? (() => ({}));
+    this._upgrade = opts.transform ?? opts.apply ?? opts.upgrade ?? (() => ({}));
     
     this.init = opts.init ?? (() => {});
     this.finalise = opts.finalise ?? (() => {});
     this.initYear = opts.initYear ?? (() => {});
     this.finaliseYear = opts.finaliseYear ?? (() => {});
     
-    this.buildings = null;
+    this.entities = null;
     this.simulatedFacet = null;
   }
+
+  /**
+   * Backward compatible getter for buildings.
+   */
+  get buildings(): Building[] | null { return this.entities; }
+  set buildings(v: Building[] | null) { this.entities = v; }
 
   /**
    * Resolves a predicate that might be a string (registry name) or a function.
@@ -108,6 +120,10 @@ export class Intervention {
   set prioritise(v: PredicatePrioritise) { this._prioritise = v; }
   get upgrade(): PredicateUpgrade { return this._upgrade; }
   set upgrade(v: PredicateUpgrade) { this._upgrade = v; }
+  get transform(): PredicateTransform { return this._upgrade; }
+  set transform(v: PredicateTransform) { this._upgrade = v; }
+  get apply(): PredicateTransform { return this._upgrade; }
+  set apply(v: PredicateTransform) { this._upgrade = v; }
 
   isSeed() {
     return !(Number.isFinite(this.startYear as number) && Number.isFinite(this.endYear as number));
@@ -115,13 +131,16 @@ export class Intervention {
 
   update(opts: Partial<InterventionOptions>) {
     Object.assign(this, opts);
+    if (opts.setupEntity !== undefined) this.setupBuilding = opts.setupEntity;
     if (opts.filter !== undefined) this._filter = opts.filter;
     if (opts.prioritise !== undefined) this._prioritise = opts.prioritise;
-    if (opts.upgrade !== undefined) this._upgrade = opts.upgrade;
+    if (opts.transform !== undefined) this._upgrade = opts.transform;
+    else if (opts.apply !== undefined) this._upgrade = opts.apply;
+    else if (opts.upgrade !== undefined) this._upgrade = opts.upgrade;
     return this;
   }
 
-  simulate(buildingsInput: Building[] | null = null) {
+  simulate(entitiesInput: Entity[] | null = null, sharedResources: any = null) {
     if (this.isSeed()) {
       console.warn(`Intervention "${this.name}" is a seed; simulate() skipped.`);
       return { state: {}, metrics: {}, buildings: [], columns: new Set<string>() };
@@ -129,39 +148,57 @@ export class Intervention {
 
     const spec = this.propertySpec?.() ?? { columns: [], buildingProperties: [], stateProperties: [], metrics: [] };
 
-    // Prepare buildings
-    let bldgs: Building[] = [];
-    if (!buildingsInput) {
+    // Prepare entities
+    let entities: Entity[] = [];
+    if (!entitiesInput) {
       const count = this.facet?.getRowCount?.() ?? 0;
-      bldgs = new Array(count);
+      entities = new Array(count);
       for (let i = 0; i < count; i++) {
         const row = this.facet.getRow(i);
-        bldgs[i] = this.setupBuilding ? this.setupBuilding(row) : { ...row };
+        entities[i] = this.setupBuilding ? this.setupBuilding(row) : { ...row };
       }
     } else {
-      bldgs = buildingsInput.slice();
-      const byUPRN = new Map(bldgs.filter(b => b && b.uprn !== undefined).map(b => [String(b.uprn), b]));
+      entities = entitiesInput.slice();
+      const byId = new Map(entities.filter(e => e && (e.id !== undefined || e.uprn !== undefined)).map(e => [String(e.id ?? e.uprn), e]));
       const count = this.facet?.getRowCount?.() ?? 0;
       for (let i = 0; i < count; i++) {
         const row = this.facet.getRow(i);
-        const uprn = row?.UPRN ?? row?.uprn;
-        if (uprn !== undefined && uprn !== null) {
-          const hit = byUPRN.get(String(uprn));
+        const id = row?.id ?? row?.uprn ?? row?.UPRN;
+        if (id !== undefined && id !== null) {
+          const hit = byId.get(String(id));
           if (hit && this.setupBuilding) this.setupBuilding(row, hit);
         }
       }
     }
 
-    this.buildings = bldgs;
+    this.entities = entities;
 
     let order = 0;
     const state: State = {};
     const metrics: Metrics = {};
 
+    // Use shared resources or create a local one
+    const resourcesMap = sharedResources instanceof Map ? sharedResources : new Map(Object.entries(sharedResources || {}));
+    const resources: SimulationContext['resources'] = {
+      get: (key) => resourcesMap.get(key),
+      set: (key, val) => { resourcesMap.set(key, val); },
+      has: (key, amount) => (resourcesMap.get(key) ?? 0) >= amount,
+      consume: (key, amount) => {
+        const current = resourcesMap.get(key) ?? 0;
+        if (current >= amount) {
+          resourcesMap.set(key, current - amount);
+          return true;
+        }
+        return false;
+      }
+    };
+
     // Create persistent context
     const context: SimulationContext = {
       year: this.startYear!,
+      step: this.startYear!,
       state,
+      resources,
       resolvePredicate: (name) => getPredicate(name),
       resolvePlugin: (name) => getPlugin(name),
       random: (seed) => {
@@ -187,18 +224,23 @@ export class Intervention {
     const upgradeFn = this.resolvePredicate(this._upgrade);
     const prioritiseFn = this._prioritise === "random" ? "random" : this.resolvePredicate(this._prioritise);
 
-    for (let year = (this.startYear as number); year <= (this.endYear as number); year++) {
-      metrics[String(year)] = [];
-      context.year = year;
-      this.initYear(year, context, metrics as any); // Backward compatibility for metrics arg
+    const start = this.startYear ?? 0;
+    const end = this.endYear ?? 0;
+
+    for (let stepVal = start; stepVal <= end; stepVal++) {
+      const stepKey = String(stepVal);
+      metrics[stepKey] = [];
+      context.year = stepVal; // for backward compatibility
+      context.step = stepVal;
+      this.initYear(stepVal, context, metrics as any);
 
       // filter
       const eligibleIdx: number[] = [];
-      for (let i = 0; i < bldgs.length; i++) {
-        const b = bldgs[i];
-        if (!b) continue;
+      for (let i = 0; i < entities.length; i++) {
+        const e = entities[i];
+        if (!e) continue;
         try {
-          if (filterFn && filterFn(b, context)) eligibleIdx.push(i);
+          if (filterFn && filterFn(e, context)) eligibleIdx.push(i);
         } catch (e) {
           context.logger.error("Filter error:", e);
         }
@@ -210,7 +252,7 @@ export class Intervention {
       } else if (prioritiseFn) {
         eligibleIdx.sort((ia, ib) => {
           try {
-            return prioritiseFn(bldgs[ia], bldgs[ib], context) || 0;
+            return prioritiseFn(entities[ia], entities[ib], context) || 0;
           } catch (e) {
             context.logger.error("Prioritise error:", e);
             return 0;
@@ -218,28 +260,32 @@ export class Intervention {
         });
       }
 
-      // upgrade
+      // upgrade (transform)
       for (const idx of eligibleIdx) {
-        const b = bldgs[idx];
-        if (!b) continue;
+        const e = entities[idx];
+        if (!e) continue;
         let delta: any = {};
         try {
           if (upgradeFn) {
-            delta = upgradeFn(b, context) || {};
+            delta = upgradeFn(e, context) || {};
           }
         } catch (e) {
-          context.logger.error("Upgrade error:", e);
+          context.logger.error("Transformation error:", e);
         }
         if (delta && Object.keys(delta).length > 0) {
           const stats = { ...delta };
-          if (stats.building === undefined) stats.building = b.uprn ?? b.UPRN ?? b.id;
-          if (stats.year === undefined) stats.year = year;
+          if (stats.entity === undefined) {
+            stats.entity = e.id ?? e.uprn ?? e.UPRN;
+          }
+          if (stats.building === undefined) stats.building = stats.entity;
+          if (stats.year === undefined) stats.year = stepVal;
+          if (stats.step === undefined) stats.step = stepVal;
           if (stats.order === undefined) stats.order = ++order;
-          metrics[String(year)].push({ building: stats.building, stats });
+          metrics[stepKey].push({ building: stats.building, stats });
         }
       }
 
-      this.finaliseYear(year, context, metrics as any);
+      this.finaliseYear(stepVal, context, metrics as any);
     }
 
     this.finalise(context);
@@ -247,7 +293,7 @@ export class Intervention {
     const columns = new Set((spec.columns || []).map((c: any) => typeof c === 'string' ? c : c.name));
     this.simulatedFacet = buildSimulatedDataFacet(columns, this.facet, metrics);
 
-    return { state, metrics, buildings: bldgs, columns };
+    return { state, metrics, buildings: entities, columns };
   }
 
   private shuffle(a: any[]) {

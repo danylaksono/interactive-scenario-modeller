@@ -4,6 +4,7 @@ export { arrayAdapter } from './facet-adapter';
 export { registerPredicate, getPredicate, listPredicates } from './registry';
 export { SimulationRunner } from './runner';
 export { migrateSavedInterventions } from './migration';
+export { toGeoJSON } from './utils';
 export * from './types';
 export type { SimulatedFacetOptions } from './types';
 export * from './plugin';

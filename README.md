@@ -1,86 +1,85 @@
 # Interactive Scenario Modeller
 
-This library provides a structured framework to simulate complex decarbonisation interventions (e.g., solar rollouts, energy upgrades) with realistic constraints like budgets, grid capacity, planning rules, and timing. It enables real-time decision-making with immediate feedback on complex trade-offs.
+This library provides a structured framework to simulate complex interventions and evolutions of entity stocks (e.g., building upgrades, urban planning, biodiversity restoration) under realistic constraints like budgets, spatial quotas, and timing. 
 
-Example: Local Authority Housing Decarbonisation.
+It uses a generic **Filter → Prioritise → Transform** lifecycle that makes it immediately usable across domains beyond energy, including transport, conservation, and public health.
 
-A council needs to retrofit 10,000 social housing units with heat pumps but faces constraints:
-- £50M budget over 5 years
-- Grid capacity limits in certain districts  
-- Fuel poverty prioritization requirements
-- Planning permission delays in conservation areas
+## Core Concepts
 
-Therefore, policymakers can:
+Every intervention is defined by three core functions (predicates) that run iteratively for each step (year, month, or custom event) of the simulation:
 
-1. Adjust budget allocations annually and instantly see impact on deployment
-2. Test "what if" scenarios: "What if we prioritize fuel-poor neighborhoods first?"  
-3. Visualize real-time trade-offs between carbon reduction vs. social equity
-4. Immediately see how grid upgrades unlock additional deployment potential
-5. Iterate on policy combinations in meetings rather than waiting for new reports
+1. **Filter**: Determines eligibility. It answers the question: "Which entities are candidates for this transformation right now?"
+2. **Prioritise**: Determines order. It answers the question: "In what order should we process the eligible entities?" (Critical when resources like budget or capacity are limited).
+3. **Transform (Upgrade)**: Determines impact. It answers the question: "What change is applied, and what are the results?" This function performs the actual modification and returns metric deltas.
 
+## Features
 
-## The Three Main Functions (Principal Predicates)
-
-The Scenario Modeller (centered around the Intervention primitive) is designed to simulate decarbonization pathways by applying changes to a building stock over time. Its design is governed by three primary functional stages and a core philosophy of flexibility and data-agnosticism.
-
-Every intervention is defined by three core functions that run iteratively for each year of the simulation:
-
-1. **Filter**: Determines eligibility. It answers the question: "Which buildings are candidates for this intervention right now?" For example, you might filter for buildings with an EPC rating below 'C', or those located in a specific deprivation decile.
-2. **Prioritise**: Determines order. It answers the question: "In what order should we process the eligible buildings?" This is critical when resources (like budget or installer capacity) are limited. Common strategies include prioritizing by cost-effectiveness (emissions reduction per £ spent) or technical suitability.
-3. **Upgrade**: Determines impact. It answers the question: "What change is applied, and what are the results?" This function performs the actual modification (e.g., installing a heat pump) and returns the metrics for that action, such as installation cost, energy savings, and CO2 reduction.
-
-## The Philosophy of the Modeller
-
-The philosophy of the library focuses on making complex energy planning logic transparent, reusable, and adaptable:
-
-* **The Facet Adapter Pattern (Data Agnosticism)**: The modeller does not care about the underlying data format (CSV, JSON, SQL, etc.). By using "Facet Adapters," it can interface with any data source that implements a simple row-and-column interface. This decouples the modelling logic from data engineering.
-* **Functional Expressiveness (Predicate-Based Control)**: Instead of using rigid configuration files, the modeller uses high-level functions (predicates). This allows planners to express complex, real-world logic—such as "only install heat pumps if the building is already well-insulated"—directly in code.
-* **Minimal Core with Extensibility**: The library follows a "lean core" approach. Specialized logic (like grid constraints or specific technology costs) is handled through a Predicate Registry and Plugin System. This allows teams to build a shared library of reusable "building blocks" for different scenarios.
-* **Transparency and Testability**: By breaking down simulations into the discrete Filter-Prioritise-Upgrade steps, the modeller moves away from "black box" simulations. Each stage can be individually tested and audited, making the resulting energy plans more robust and easier to explain to stakeholders.
+- **Domain Agnostic**: Works with any "Entity" (Buildings, Parcels, Habitat Patches, Fleet Corridors).
+- **Spatial First**: Geometries are first-class properties. Carry GeoJSON through the simulation and use spatial predicates (`within`, `distanceTo`).
+- **Resource Layer**: Global `resources` API for cross-intervention constraints (e.g., "max 5 upgrades per km²", "global installer headroom", "regional budget envelopes").
+- **Flexible Timesteps**: Configure the simulation loop by years, months, or custom event steps.
+- **Data Agnostic**: Interface with any data source (CSV, JSON, GeoJSON, SQL) via the Facet Adapter pattern.
+- **Pure Client-Side**: Run complex simulations (50k+ features) directly in the browser with no backend required.
 
 ## Quickstart
 
 ```bash
-npm install
-npm run build
-npm test
+npm install interactive-scenario-modeller
+```
+
+```ts
+import { Intervention, arrayAdapter, toGeoJSON } from 'interactive-scenario-modeller';
+
+const entities = [
+  { id: 'A', geometry: { type: 'Point', coordinates: [0, 0] }, value: 10 },
+  { id: 'B', geometry: { type: 'Point', coordinates: [1, 1] }, value: 20 }
+];
+
+const intervention = new Intervention('Greening Project', {
+  facet: arrayAdapter(entities),
+  startYear: 2025,
+  endYear: 2030,
+  // Filter by spatial location or attributes
+  filter: (entity, context) => entity.value < 15,
+  // Ranks entities by potential
+  prioritise: (a, b) => b.value - a.value,
+  // Apply the transformation and consume global resources
+  transform: (entity, context) => {
+    if (context.resources.consume('budget', 1000)) {
+      return { greened: true, cost: 1000 };
+    }
+  }
+});
+
+const result = intervention.simulate(null, { budget: 50000 });
+const geojson = toGeoJSON(intervention.simulatedFacet);
 ```
 
 ## API Overview
 
-- `new Intervention(name, opts)` — core modelling primitive
-- `registerPredicate(name, fn)` — register predefined predicate functions
-- `installScenarioModellerPresets(opts)` — register built-in scenario predicates/plugins
-- `arrayAdapter(arr)` — simple facet adapter
+### `Intervention`
+The primary modelling primitive. 
+- `setupEntity` / `setupBuilding`: Transform facet rows into entity objects.
+- `transform` / `apply` / `upgrade`: Apply changes and return metrics.
+- `simulate(entities?, sharedResources?)`: Run the simulation loop.
 
-## Expected Input Data
+### `SimulationContext`
+Passed to every predicate, providing access to:
+- `step` / `year`: Current timestep.
+- `resources`: Global resource API (`get`, `set`, `consume`, `has`).
+- `state`: Local intervention state.
+- `random()`: Deterministic RNG for reproducible scenarios.
 
-The library accepts row-oriented data (typically one row per building). There is no strict schema, but these conventions make plugins and joins work consistently:
+### `Geographic Support`
+- `toGeoJSON(facet)`: Export results to a GeoJSON FeatureCollection if geometries are present.
+- `registerSpatialPredicates()`: Adds `geo:distanceTo` and `geo:within` to the registry.
 
-- `uprn` (recommended) — unique building identifier (`string | number`)
-- Cost / potential fields used by your predicates (for example `estimatedPVCost`, `heatPumpCost`, `carbonSavingsKg`)
-- Optional geographic fields for regional/grid plugins (for example `region`, `substationId`, `lsoa`)
-- Optional social fields for prioritisation (for example `fuelPovertyScore`, `deprivationIndex`)
+## The Philosophy of the Modeller
 
-Minimal example:
-
-```ts
-const buildings = [
-	{
-		uprn: '100001',
-		estimatedPVCost: 5000,
-		carbonSavingsKg: 850,
-		region: 'North',
-		substationId: 'SS-12',
-		fuelPovertyScore: 0.72,
-	},
-];
-```
-
-Notes:
-
-- If `uprn` is missing, many flows can still run, but cross-year tracking and facet joins are less reliable.
-- Plugins may require additional fields depending on the domain (grid, transport, risk, etc.).
+* **The Facet Adapter Pattern**: Decouples logic from data engineering. Wrap any source in `FacetLike`.
+* **Predicate-Based Control**: Express complex, real-world logic directly in code rather than rigid config files.
+* **Minimal Core with Extensibility**: Specialized logic (grid, finance, risk) is handled through a plugin system.
+* **Transparency**: Break down "black box" simulations into auditable, testable steps.
 
 ### Data Requirements by Plugin Family
 

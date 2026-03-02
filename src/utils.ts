@@ -23,6 +23,40 @@ export function compilePredicate(code: string): Function {
   }
 }
 
+/**
+ * Converts a simulated facet to a GeoJSON FeatureCollection if geometries are present.
+ * 
+ * @param facet - A facet-like object (e.g. from intervention.simulatedFacet)
+ * @returns GeoJSON FeatureCollection or null if no geometries found
+ */
+export function toGeoJSON(facet: any) {
+  if (!facet || typeof facet.getRowCount !== 'function') return null;
+  
+  const features = [];
+  const count = facet.getRowCount();
+  let hasGeo = false;
+
+  for (let i = 0; i < count; i++) {
+    const row = facet.getRow(i);
+    if (row && row.geometry) {
+      hasGeo = true;
+      const { geometry, ...properties } = row;
+      features.push({
+        type: 'Feature',
+        geometry,
+        properties
+      });
+    }
+  }
+  
+  if (!hasGeo) return null;
+
+  return {
+    type: 'FeatureCollection',
+    features
+  };
+}
+
 export function safeEval(code: string) {
   // Deprecated convenience wrapper: prefer `compilePredicate` + `registerPredicate`.
   return compilePredicate(code);

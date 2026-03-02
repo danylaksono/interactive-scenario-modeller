@@ -1,5 +1,5 @@
 import { Metrics, SimulatedFacetOptions } from "./types";
-import { DataTable } from "./utils"; // lightweight DataTable in utils for example purposes
+import { DataTable } from "./utils";
 
 /**
  * Builds a simulated data facet from intervention metrics.
@@ -9,46 +9,10 @@ import { DataTable } from "./utils"; // lightweight DataTable in utils for examp
  * or provide a custom `outputBuilder` function in the options.
  * 
  * @param columnsUsed - Set of column names used by the intervention
- * @param facet - Original facet containing building data
+ * @param facet - Original facet containing entity data
  * @param metrics - Metrics produced by the intervention simulation
  * @param opts - Configuration options
  * @returns A facet-like object with getRowCount() and getRow(i) methods
- * 
- * @example
- * ```typescript
- * // Basic usage with default options
- * const result = intervention.simulate();
- * const simulatedFacet = buildSimulatedDataFacet(
- *   result.columns,
- *   originalFacet,
- *   result.metrics
- * );
- * 
- * // Custom configuration
- * const customFacet = buildSimulatedDataFacet(
- *   result.columns,
- *   originalFacet,
- *   result.metrics,
- *   {
- *     keepColumns: ['region', 'postcode'], // Custom columns to carry forward
- *     includeUntouched: true, // Include buildings not modified
- *     naValue: 'N/A' // Custom placeholder
- *   }
- * );
- * 
- * // Custom output builder for different visual analytics frameworks
- * const customOutput = buildSimulatedDataFacet(
- *   result.columns,
- *   originalFacet,
- *   result.metrics,
- *   {
- *     outputBuilder: (columns, data, facet) => {
- *       // Return your custom data structure
- *       return { columns, rows: data, metadata: { source: 'intervention' } };
- *     }
- *   }
- * );
- * ```
  */
 export function buildSimulatedDataFacet(
   columnsUsed: Set<string>,
@@ -67,11 +31,11 @@ export function buildSimulatedDataFacet(
   const columnsToKeep = keepColumns === null ? [] : (Array.isArray(keepColumns) ? keepColumns : []);
 
   const ci = (s: any) => String(s).toLowerCase();
-  const reserved = new Set(['uprn', 'year']);
+  const reserved = new Set(['uprn', 'id', 'year', 'geometry']);
 
   const rawUsedCols = Array.from(columnsUsed || []);
   const usedCols: string[] = [];
-  const seen = new Set(['uprn', 'year']);
+  const seen = new Set(['uprn', 'id', 'year', 'geometry']);
   for (const name of rawUsedCols) {
     if (!name) continue;
     const key = ci(name);
@@ -82,11 +46,11 @@ export function buildSimulatedDataFacet(
 
   // build facet index
   const facetCount = facet?.getRowCount?.() ?? 0;
-  const facetByUprn = new Map<string, any>();
+  const facetById = new Map<string, any>();
   for (let i = 0; i < facetCount; i++) {
     const row = facet.getRow(i) || {};
-    const id = row?.uprn ?? row?.UPRN ?? row?.id;
-    if (id != null) facetByUprn.set(String(id), row);
+    const id = row?.id ?? row?.uprn ?? row?.UPRN;
+    if (id != null) facetById.set(String(id), row);
   }
 
   const getCI = (row: any, key: string) => {
@@ -107,14 +71,14 @@ export function buildSimulatedDataFacet(
   };
 
   // flatten metrics
-  const metricEntries: Array<{ uprn: string, year: string, stats: any }> = [];
+  const metricEntries: Array<{ id: string, year: string, stats: any }> = [];
   const statsKeyOrder: string[] = [];
   const statsKeySeen = new Set<string>();
 
   const pushStatsKeys = (obj: any) => {
     if (!obj) return;
     for (const k of Object.keys(obj)) {
-      if (k === 'uprn' || k === 'id' || k === 'building' || k === 'year') continue;
+      if (k === 'uprn' || k === 'id' || k === 'building' || k === 'entity' || k === 'year' || k === 'geometry') continue;
       const lk = ci(k);
       if (reserved.has(lk) || seen.has(lk)) continue;
       if (!statsKeySeen.has(lk)) { statsKeySeen.add(lk); statsKeyOrder.push(k); seen.add(lk); }
@@ -128,9 +92,9 @@ export function buildSimulatedDataFacet(
     for (const item of items) {
       if (!item) continue;
       const stats = item.stats ?? {};
-      const uprn = item.building ?? stats.uprn ?? stats.id ?? stats.building;
-      if (uprn == null) continue;
-      metricEntries.push({ uprn: String(uprn), year: yearKey, stats });
+      const id = item.building ?? item.entity ?? stats.uprn ?? stats.id ?? stats.building ?? stats.entity;
+      if (id == null) continue;
+      metricEntries.push({ id: String(id), year: yearKey, stats });
       pushStatsKeys(stats);
     }
   }
@@ -146,46 +110,57 @@ export function buildSimulatedDataFacet(
     seen.add(lk);
   }
 
-  const columns = ['uprn','year', ...statsKeyOrder, ...carryCols];
+  // check if geometry exists in facet to carry it forward as first-class
+  const hasGeometry = facetHasColCI('geometry');
+  const columns = ['id', 'year', ...statsKeyOrder, ...carryCols];
+  if (hasGeometry) columns.push('geometry');
 
   const data: any[] = [];
-  const seenUprn = new Set<string>();
+  const seenId = new Set<string>();
 
-  for (const {uprn, year, stats} of metricEntries) {
-    const facetRow = facetByUprn.get(uprn) || {};
-    const out: any[] = [];
-    out.push(uprn ?? N_A);
-    out.push(year ?? N_A);
-    for (const c of statsKeyOrder) out.push(Object.prototype.hasOwnProperty.call(stats, c) ? stats[c] : N_A);
+  const buildRow = (id: string, year: any, stats: any, facetRow: any) => {
+    const row: any = { id, year };
+    for (const c of statsKeyOrder) row[c] = Object.prototype.hasOwnProperty.call(stats, c) ? stats[c] : N_A;
     for (const c of carryCols) {
       const v = getCI(facetRow, c);
-      out.push(v !== undefined ? v : N_A);
+      row[c] = v !== undefined ? v : N_A;
     }
-    data.push(out);
-    seenUprn.add(uprn);
+    if (hasGeometry) {
+      const g = getCI(facetRow, 'geometry');
+      row.geometry = g !== undefined ? g : null;
+    }
+    // Backward compatibility for uprn
+    if (row.uprn === undefined) row.uprn = id;
+    return row;
+  };
+
+  for (const {id, year, stats} of metricEntries) {
+    const facetRow = facetById.get(id) || {};
+    data.push(buildRow(id, year, stats, facetRow));
+    seenId.add(id);
   }
 
   if (includeUntouched) {
     for (let i = 0; i < facetCount; i++) {
       const row = facet.getRow(i) || {};
-      const uprn = String(row?.uprn ?? row?.UPRN ?? row?.id ?? "");
-      if (!uprn || seenUprn.has(uprn)) continue;
-      const out: any[] = [];
-      out.push(row?.uprn ?? row?.UPRN ?? row?.id ?? N_A);
-      out.push(N_A);
-      for (const c of statsKeyOrder) out.push(N_A);
-      for (const c of carryCols) { const v = getCI(row, c); out.push(v !== undefined ? v : N_A); }
-      data.push(out);
+      const id = String(row?.id ?? row?.uprn ?? row?.UPRN ?? "");
+      if (!id || seenId.has(id)) continue;
+      data.push(buildRow(id, N_A, {}, row));
     }
   }
 
-  // Use custom output builder if provided, otherwise use default DataTable
+  // Use custom output builder if provided
   if (outputBuilder) {
-    return outputBuilder(columns, data, facet);
+    // For outputBuilder, we might still want to provide array format if that's what's expected,
+    // but building objects is more robust for internal chaining.
+    // If outputBuilder expects arrays, it can do Object.values(row) based on columns.
+    return outputBuilder(columns, data.map(r => columns.map(c => r[c])), facet);
   }
   
-  // Default: Use a minimal DataTable class for example; the consumer may replace with their own
-  const table = new DataTable(columns, data);
-  const outFacet = table.identityFacet();
-  return outFacet;
+  return {
+    columns,
+    getRowCount: () => data.length,
+    getRow: (i: number) => data[i],
+    colNames: columns
+  };
 }
