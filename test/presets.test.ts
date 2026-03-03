@@ -14,6 +14,7 @@ describe('Scenario modeller presets', () => {
 
     expect(result.predicates.budgetConstraint).toBe(`${namespace}:budgetConstraint`);
     expect(typeof getPredicate(result.predicates.budgetConstraint)).toBe('function');
+    expect(typeof getPredicate(result.predicates.multiObjectivePrioritiser)).toBe('function');
     expect(typeof getPredicate(result.predicates.policyEvolution)).toBe('function');
 
     const plugins = [
@@ -34,6 +35,7 @@ describe('Scenario modeller presets', () => {
     expect(result.pluginExports.planningConstraint).toBe(`${namespace}-planning-constraint:constraint`);
     expect(result.pluginExports.phasedRollout).toBe(`${namespace}-phased-rollout:constraint`);
     expect(result.pluginExports.multiObjectivePrioritization).toBe(`${namespace}-multi-objective:constraint`);
+    expect(result.pluginExports.multiObjectivePrioritiser).toBe(`${namespace}-multi-objective:prioritise`);
     expect(result.pluginExports.policyEvolution).toBe(`${namespace}-policy-evolution:constraint`);
   });
 
@@ -90,5 +92,33 @@ describe('Scenario modeller presets', () => {
     expect(predicateResult.metrics['2024'][0].building).toBe('ok-1');
     expect(pluginResult.metrics['2024'][0].building).toBe('ok-1');
     expect(budgetPluginResult.metrics['2026'][0].building).toBe('budget-ok');
+  });
+
+  it('multi-objective prioritiser in presets correctly ranks and filters', () => {
+    const namespace = `scenario-mcda-${Date.now()}`;
+    const { predicates } = installScenarioModellerPresets({ namespace });
+
+    const facet = arrayAdapter([
+      { uprn: 'low', carbonSavingPotential: 10, fuelPovertyScore: 10, gridCapacityEfficiency: 10, communityImpact: 10 }, // score ~10
+      { uprn: 'mid', carbonSavingPotential: 60, fuelPovertyScore: 60, gridCapacityEfficiency: 60, communityImpact: 60 }, // score ~60
+      { uprn: 'high', carbonSavingPotential: 90, fuelPovertyScore: 90, gridCapacityEfficiency: 90, communityImpact: 90 }, // score ~90
+    ]);
+
+    const intervention = new Intervention('mcda-test', {
+      facet,
+      startYear: 2026,
+      endYear: 2026,
+      init: (context) => {
+        context.state.minScoreThreshold = 50;
+      },
+      filter: predicates.multiObjectivePrioritization, // filter out 'low'
+      prioritise: predicates.multiObjectivePrioritiser, // order high -> mid
+      upgrade: () => ({ installed: true }),
+    });
+
+    const result = intervention.simulate();
+    const order = result.metrics['2026'].map((entry) => String(entry.building));
+
+    expect(order).toEqual(['high', 'mid']);
   });
 });

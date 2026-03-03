@@ -27,9 +27,11 @@ import {
   createCostBenefitPrioritiserPlugin,
   createCarbonTargetConstraintPlugin,
   createTopPercentPotentialPlugin,
+  createMultiCriteriaPrioritiserPlugin,
   type CostBenefitPrioritiserOptions,
   type CarbonTargetConstraintOptions,
   type TopPercentPotentialOptions,
+  type MultiCriteriaOptions,
 } from "./optimization";
 import {
   createSpatialClusterPrioritiserPlugin,
@@ -87,6 +89,7 @@ export type OptimizationBundleInstallOptions = {
   costBenefitPrioritiser?: CostBenefitPrioritiserOptions;
   carbonTargetConstraint?: CarbonTargetConstraintOptions;
   topPercentPotential?: TopPercentPotentialOptions;
+  multiCriteriaPrioritiser?: MultiCriteriaOptions;
 };
 
 export type AllBundleInstallOptions = {
@@ -224,14 +227,17 @@ export function installOptimizationPlugins(
   costBenefitPrioritiser: InstalledPluginRef;
   carbonTargetConstraint: InstalledPluginRef;
   topPercentPotential: InstalledPluginRef;
+  multiCriteriaPrioritiser: InstalledPluginRef;
 } {
   const costBenefitPrioritiser = createCostBenefitPrioritiserPlugin(options.costBenefitPrioritiser);
   const carbonTargetConstraint = createCarbonTargetConstraintPlugin(options.carbonTargetConstraint);
   const topPercentPotential = createTopPercentPotentialPlugin(options.topPercentPotential);
+  const multiCriteriaPrioritiser = createMultiCriteriaPrioritiserPlugin(options.multiCriteriaPrioritiser);
 
   registerPlugin(costBenefitPrioritiser);
   registerPlugin(carbonTargetConstraint);
   registerPlugin(topPercentPotential);
+  registerPlugin(multiCriteriaPrioritiser);
 
   return {
     costBenefitPrioritiser: {
@@ -245,6 +251,10 @@ export function installOptimizationPlugins(
     topPercentPotential: {
       name: topPercentPotential.manifest.name,
       exportRef: `${topPercentPotential.manifest.name}:constraint`,
+    },
+    multiCriteriaPrioritiser: {
+      name: multiCriteriaPrioritiser.manifest.name,
+      exportRef: `${multiCriteriaPrioritiser.manifest.name}:prioritise`,
     },
   };
 }

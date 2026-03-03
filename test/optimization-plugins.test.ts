@@ -4,6 +4,7 @@ import {
   createCarbonTargetConstraintPlugin,
   createCostBenefitPrioritiserPlugin,
   createTopPercentPotentialPlugin,
+  createMultiCriteriaPrioritiserPlugin,
   installOptimizationPlugins,
   Intervention,
   registerPlugin,
@@ -94,16 +95,51 @@ describe('Optimization plugins', () => {
     expect(selected).toEqual(['r1', 'r2']);
   });
 
+  it('multi-criteria prioritiser ranks entities by weighted sum of getters', () => {
+    const pluginName = `opt-mcda-${Date.now()}`;
+    registerPlugin(createMultiCriteriaPrioritiserPlugin({
+      name: pluginName,
+      criteria: [
+        { name: 'score1', weight: 0.7, getValue: (e: any) => e.v1 },
+        { name: 'score2', weight: 0.3, getValue: (e: any) => e.v2, direction: -1 } // 0.7*v1 - 0.3*v2
+      ]
+    }));
+
+    const facet = arrayAdapter([
+      { uprn: 'a', v1: 10, v2: 10 }, // 7 - 3 = 4
+      { uprn: 'b', v1: 10, v2: 20 }, // 7 - 6 = 1
+      { uprn: 'c', v1: 20, v2: 30 }, // 14 - 9 = 5
+    ]);
+
+    const intervention = new Intervention('opt-mcda', {
+      facet,
+      startYear: 2026,
+      endYear: 2026,
+      filter: () => true,
+      prioritise: `${pluginName}:prioritise`,
+      upgrade: () => ({ installed: true }),
+    });
+
+    const result = intervention.simulate();
+    const order = result.metrics['2026'].map((entry) => String(entry.building));
+
+    expect(order[0]).toBe('c');
+    expect(order[1]).toBe('a');
+    expect(order[2]).toBe('b');
+  });
+
   it('optimization bundle installer returns valid export refs', () => {
     const suffix = Date.now();
     const refs = installOptimizationPlugins({
       costBenefitPrioritiser: { name: `bundle-opt-prior-${suffix}` },
       carbonTargetConstraint: { name: `bundle-opt-target-${suffix}` },
       topPercentPotential: { name: `bundle-opt-top-${suffix}` },
+      multiCriteriaPrioritiser: { name: `bundle-opt-mcda-${suffix}` },
     });
 
     expect(refs.costBenefitPrioritiser.exportRef).toBe(`bundle-opt-prior-${suffix}:prioritise`);
     expect(refs.carbonTargetConstraint.exportRef).toBe(`bundle-opt-target-${suffix}:constraint`);
     expect(refs.topPercentPotential.exportRef).toBe(`bundle-opt-top-${suffix}:constraint`);
+    expect(refs.multiCriteriaPrioritiser.exportRef).toBe(`bundle-opt-mcda-${suffix}:prioritise`);
   });
 });

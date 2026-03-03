@@ -205,7 +205,8 @@ Preset predicates included:
 - `budgetConstraint`
 - `planningConstraint`
 - `phasedRollout`
-- `multiObjectivePrioritization`
+- `multiObjectivePrioritization` (Filtering threshold)
+- `multiObjectivePrioritiser` (Ranking order)
 - `policyEvolution`
 
 Plugin export references included:
@@ -213,7 +214,8 @@ Plugin export references included:
 - `pluginExports.budgetConstraint`
 - `pluginExports.planningConstraint`
 - `pluginExports.phasedRollout`
-- `pluginExports.multiObjectivePrioritization`
+- `pluginExports.multiObjectivePrioritization` (Filtering threshold)
+- `pluginExports.multiObjectivePrioritiser` (Ranking order)
 - `pluginExports.policyEvolution`
 
 ## Financial Plugins
@@ -239,6 +241,7 @@ Plugin export references included:
 ## Optimization Plugins
 
 - `createCostBenefitPrioritiserPlugin(opts)` — reusable `prioritiser` plugin for benefit-per-cost ordering
+- `createMultiCriteriaPrioritiserPlugin(opts)` — general-purpose `prioritiser` plugin using weighted sum model with functional getters (ideal for AHP)
 - `createCarbonTargetConstraintPlugin(opts)` — reusable `constraint` plugin to stop selection once target is reached
 - `createTopPercentPotentialPlugin(opts)` — reusable `constraint` plugin for pre-ranked top-percent targeting
 

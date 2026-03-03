@@ -28,6 +28,7 @@ export type ScenarioPluginPack = {
     planningConstraint: (building: Building, context: SimulationContext) => boolean;
     phasedRollout: (building: Building, context: SimulationContext) => boolean;
     multiObjectivePrioritization: (building: Building, context: SimulationContext) => boolean;
+    multiObjectivePrioritiser: (a: Building, b: Building, context: SimulationContext) => number;
     policyEvolution: (building: Building, context: SimulationContext) => boolean;
   };
   register: (plugin: PluginRegistration) => void;
@@ -80,6 +81,29 @@ export function createScenarioPluginPack(
 
     const priorityZone = toNumber((building as any)?.priorityZone, Number.MAX_SAFE_INTEGER);
     return priorityZone <= currentPhase;
+  };
+
+  const multiObjectivePrioritiser = (a: Building, b: Building, context: SimulationContext) => {
+    const defaults: Required<ScenarioPluginObjectiveWeights> = {
+      carbonSavingPotential: 0.4,
+      fuelPovertyScore: 0.3,
+      gridCapacityEfficiency: 0.2,
+      communityImpact: 0.1,
+    };
+
+    const weights: Required<ScenarioPluginObjectiveWeights> = {
+      ...defaults,
+      ...(defaultObjectiveWeights ?? {}),
+      ...(context.state.objectiveWeights ?? {}),
+    };
+
+    const getScore = (building: Building) =>
+      toNumber((building as any)?.carbonSavingPotential) * weights.carbonSavingPotential +
+      toNumber((building as any)?.fuelPovertyScore) * weights.fuelPovertyScore +
+      toNumber((building as any)?.gridCapacityEfficiency) * weights.gridCapacityEfficiency +
+      toNumber((building as any)?.communityImpact) * weights.communityImpact;
+
+    return getScore(b) - getScore(a);
   };
 
   const multiObjectivePrioritization = (building: Building, context: SimulationContext) => {
@@ -171,13 +195,18 @@ export function createScenarioPluginPack(
       manifest: {
         name: `${namespace}-multi-objective`,
         version: "1.0.0",
-        kind: ["constraint"],
-        description: "Built-in multi-objective prioritization plugin",
+        kind: ["constraint", "prioritiser"],
+        description: "Built-in multi-objective prioritization and filtering plugin",
         entry: "internal:preset",
         compat: { package: "interactive-scenario-modeller", minVersion: "0.1.0" },
         trusted: true,
+        exports: {
+          constraint: "constraint",
+          prioritise: "prioritise",
+        },
       },
       constraint: multiObjectivePrioritization,
+      prioritise: multiObjectivePrioritiser,
     },
     {
       manifest: {
@@ -200,6 +229,7 @@ export function createScenarioPluginPack(
       planningConstraint,
       phasedRollout,
       multiObjectivePrioritization,
+      multiObjectivePrioritiser,
       policyEvolution,
     },
     register: registerPlugin,

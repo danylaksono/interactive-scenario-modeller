@@ -28,6 +28,7 @@ export type ScenarioPresetInstallResult = {
     planningConstraint: string;
     phasedRollout: string;
     multiObjectivePrioritization: string;
+    multiObjectivePrioritiser: string;
     policyEvolution: string;
   };
   pluginExports: {
@@ -35,6 +36,7 @@ export type ScenarioPresetInstallResult = {
     planningConstraint: string;
     phasedRollout: string;
     multiObjectivePrioritization: string;
+    multiObjectivePrioritiser: string;
     policyEvolution: string;
   };
 };
@@ -48,6 +50,7 @@ export function installScenarioModellerPresets(
   const planningConstraintName = `${namespace}:planningConstraint`;
   const phasedRolloutName = `${namespace}:phasedRollout`;
   const multiObjectiveName = `${namespace}:multiObjectivePrioritization`;
+  const multiObjectivePrioritiserName = `${namespace}:multiObjectivePrioritiser`;
   const policyEvolutionName = `${namespace}:policyEvolution`;
 
   const pluginPack = createScenarioPluginPack({
@@ -70,6 +73,8 @@ export function installScenarioModellerPresets(
 
   registerPredicate(multiObjectiveName, pluginPack.predicates.multiObjectivePrioritization);
 
+  registerPredicate(multiObjectivePrioritiserName, pluginPack.predicates.multiObjectivePrioritiser);
+
   registerPredicate(policyEvolutionName, pluginPack.predicates.policyEvolution);
 
   return {
@@ -79,6 +84,7 @@ export function installScenarioModellerPresets(
       planningConstraint: planningConstraintName,
       phasedRollout: phasedRolloutName,
       multiObjectivePrioritization: multiObjectiveName,
+      multiObjectivePrioritiser: multiObjectivePrioritiserName,
       policyEvolution: policyEvolutionName,
     },
     pluginExports: {
@@ -86,6 +92,7 @@ export function installScenarioModellerPresets(
       planningConstraint: `${namespace}-planning-constraint:constraint`,
       phasedRollout: `${namespace}-phased-rollout:constraint`,
       multiObjectivePrioritization: `${namespace}-multi-objective:constraint`,
+      multiObjectivePrioritiser: `${namespace}-multi-objective:prioritise`,
       policyEvolution: `${namespace}-policy-evolution:constraint`,
     },
   };

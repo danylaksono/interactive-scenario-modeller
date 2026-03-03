@@ -119,9 +119,29 @@ registerPredicate('phasedRollout', (building, context) => {
 
 ## Advanced Implementation Patterns
 
-### Multi-Objective Optimization
+### Multi-Objective Optimization (MCDA)
+The library provides first-party support for Multi-Criteria Decision Analysis (MCDA) via the `createMultiCriteriaPrioritiserPlugin`. This is the preferred way to rank entities when balancing conflicting goals:
+
 ```typescript
-// Complex prioritization balancing multiple factors
+import { createMultiCriteriaPrioritiserPlugin } from 'interactive-scenario-modeller';
+
+// Rank entities by weighted benefit-per-cost (MCDA approach)
+const prioritiser = createMultiCriteriaPrioritiserPlugin({
+  criteria: [
+    { name: 'carbon', weight: 0.5, getValue: (e) => e.carbonPotential },
+    { name: 'cost', weight: 0.3, getValue: (e) => e.installCost, direction: -1 },
+    { name: 'socialValue', weight: 0.2, getValue: (e) => e.deprivationIndex }
+  ]
+});
+
+const mcdaIntervention = new Intervention('Balanced Rollout', {
+  prioritise: prioritiser.prioritise,
+  // ...
+});
+```
+
+For simpler cases (binary filtering by threshold), the built-in preset remains valid:
+```typescript
 registerPredicate('multiObjectivePrioritization', (building, context) => {
   const score = 
     (building.carbonSavingPotential * 0.4) +
@@ -191,6 +211,8 @@ const { predicates, pluginExports } = installScenarioModellerPresets({
   namespace: 'scenario',
   defaultMinScoreThreshold: 0.6,
 });
+// predicates.multiObjectivePrioritization (Filtering threshold)
+// predicates.multiObjectivePrioritiser (Ranking order)
 
 const facet = arrayAdapter(buildings);
 ```
@@ -286,7 +308,7 @@ const phasedIntervention = new Intervention('Phased rollout', {
 });
 ```
 
-### 4) `multiObjectivePrioritization`
+### 4) `multiObjectivePrioritization` & `multiObjectivePrioritiser`
 
 **Optional state shape**
 
@@ -314,7 +336,10 @@ const multiObjectiveIntervention = new Intervention('Multi-objective targeting',
   facet,
   startYear: 2026,
   endYear: 2030,
+  // 1. Filter out low-potential buildings
   filter: predicates.multiObjectivePrioritization,
+  // 2. Rank the remaining candidates by combined merit
+  prioritise: predicates.multiObjectivePrioritiser,
   upgrade: () => ({ installed: true }),
 });
 ```
