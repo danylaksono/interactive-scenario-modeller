@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type FuelPovertyPriorityWeights = {
   fuelPovertyScore?: number;
@@ -42,7 +42,7 @@ export function createFuelPovertyPriorityPlugin(
 
   const defaultThreshold = toNumber(options.threshold, 0.5);
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const stateConfig = ((context.state as any)?.[stateConfigKey] ?? {}) as {
       weights?: FuelPovertyPriorityWeights;
       threshold?: number;
@@ -55,8 +55,8 @@ export function createFuelPovertyPriorityPlugin(
 
     const threshold = toNumber(stateConfig.threshold, defaultThreshold);
 
-    const fuelPovertyScore = toNumber((building as any)?.[fuelPovertyField], 0);
-    const carbonSavingPotential = toNumber((building as any)?.[carbonField], 0);
+    const fuelPovertyScore = toNumber((entity as any)?.[fuelPovertyField], 0);
+    const carbonSavingPotential = toNumber((entity as any)?.[carbonField], 0);
 
     const score =
       fuelPovertyScore * weights.fuelPovertyScore +
@@ -71,7 +71,7 @@ export function createFuelPovertyPriorityPlugin(
       version,
       kind: ["constraint"],
       description:
-        "Prioritizes buildings using a weighted fuel-poverty and carbon-savings score",
+        "Prioritizes entities using a weighted fuel-poverty and carbon-savings score",
       entry: "internal:plugin",
       compat: {
         package: "interactive-scenario-modeller",

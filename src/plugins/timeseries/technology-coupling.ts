@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type TechnologyCouplingOptions = {
   name?: string;
@@ -37,9 +37,9 @@ export function createTechnologyCouplingPlugin(
   const outputAdjustedDemandKey = options.outputAdjustedDemandKey ?? "adjustedDemandIncreaseKw";
   const outputAdjustedCarbonKey = options.outputAdjustedCarbonKey ?? "adjustedCarbonSavingPotential";
 
-  const upgrade = (building: Building, context: SimulationContext) => {
-    const baseDemand = toNumber((building as any)?.[demandField], 0);
-    const baseCarbon = toNumber((building as any)?.[carbonField], 0);
+  const upgrade = (entity: Entity, context: SimulationContext) => {
+    const baseDemand = toNumber((entity as any)?.[demandField], 0);
+    const baseCarbon = toNumber((entity as any)?.[carbonField], 0);
 
     const couplingState = ((context.state as any)?.[couplingStateKey] ?? {}) as {
       batteryDemandReductionFactor?: number;
@@ -54,7 +54,7 @@ export function createTechnologyCouplingPlugin(
       1,
       Math.max(
         0,
-        toNumber((building as any)?.[batteryField], toNumber(couplingState.batteryAdoptionRate, 0)),
+        toNumber((entity as any)?.[batteryField], toNumber(couplingState.batteryAdoptionRate, 0)),
       ),
     );
 
@@ -62,7 +62,7 @@ export function createTechnologyCouplingPlugin(
       1,
       Math.max(
         0,
-        toNumber((building as any)?.[heatPumpField], toNumber(couplingState.heatPumpAdoptionRate, 0)),
+        toNumber((entity as any)?.[heatPumpField], toNumber(couplingState.heatPumpAdoptionRate, 0)),
       ),
     );
 

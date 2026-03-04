@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type RegionBudgetSplitOptions = {
   name?: string;
@@ -52,12 +52,12 @@ export function createRegionBudgetSplitPlugin(
   const spentStateKey = options.spentStateKey ?? "regionBudgetSpent";
   const strictMissingBudget = options.strictMissingBudget ?? true;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
     const reservedKey = `__reservedRegionBudget_${name}`;
 
-    const regionRaw = (building as any)?.[regionField];
+    const regionRaw = (entity as any)?.[regionField];
     const region = regionRaw === undefined || regionRaw === null ? "" : String(regionRaw);
     if (!region) return false;
 
@@ -65,7 +65,7 @@ export function createRegionBudgetSplitPlugin(
     const budget = resolveRegionBudget(allocation, year, region);
     if (budget === null) return !strictMissingBudget;
 
-    const cost = Math.max(0, toNumber((building as any)?.[costField], 0));
+    const cost = Math.max(0, toNumber((entity as any)?.[costField], 0));
 
     const spentBucket = (state[spentStateKey] ?? {}) as Record<string, any>;
     const spent = toNumber(spentBucket?.[year]?.[region], 0);

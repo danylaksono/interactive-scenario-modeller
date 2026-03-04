@@ -40,8 +40,8 @@ export type PluginContext = SimulationContext;
 // Signature shapes for common plugin types
 export type PredicateFn<T = any> = (a: T, b: T, ctx: SimulationContext) => number | boolean;
 export type PrioritiseFn<T = any> = (a: T, b: T, ctx: SimulationContext) => number;
-export type UpgradeFn<T = any> = (building: T, ctx: SimulationContext) => Record<string, any> | Promise<Record<string, any>>;
-export type ConstraintFn<T = any> = (building: T, ctx: SimulationContext) => boolean;
+export type UpgradeFn<T = any> = (entity: T, ctx: SimulationContext) => Record<string, any> | Promise<Record<string, any>>;
+export type ConstraintFn<T = any> = (entity: T, ctx: SimulationContext) => boolean;
 export type AdapterFn = (data: any, opts?: any) => any;
 export type OutputBuilderFn = (columns: string[], rows: any[], facet: any, opts?: any) => any;
 

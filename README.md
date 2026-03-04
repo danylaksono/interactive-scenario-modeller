@@ -118,21 +118,21 @@ Passed to every predicate, providing access to:
 
 ### Data Requirements by Plugin Family
 
-Use this as a quick checklist when preparing your dataset. Required fields vary by plugin options and your predicate logic, but these are common defaults:
+Use this as a quick checklist when preparing your dataset. All field names are typically configurable in plugin options, but these are the common defaults:
 
 | Plugin family | Typical required fields | Typical optional fields |
 | --- | --- | --- |
-| Financial | `uprn`, intervention cost field (for example `estimatedPVCost`) | `capex`, `opex`, financing parameters, discount-rate inputs |
-| Social | `uprn`, `fuelPovertyScore` (or equivalent priority metric) | `deprivationIndex`, vulnerability flags, tenure |
-| Policy | `uprn`, year/timeline fields used by policy rules | local policy zone, planning class, permit status |
-| Grid | `uprn`, `substationId`, demand/export fields used by checks | feeder id, constrained-area flag, upgrade queue status |
-| Optimization | `uprn`, benefit + cost fields (for ranking/constraints) | readiness score, confidence/uncertainty score |
-| Geographic | `uprn`, geographic grouping field (`region`, `lsoa`, etc.) | urban/rural class, spatial cluster id, district code |
-| Timeseries | `uprn`, seasonal/load profile inputs | flexibility score, hourly shape id, storage coupling fields |
-| Transport | `uprn`, EV charging demand/load fields, corridor/group id | charger type mix, fleet assumptions, travel-demand class |
-| Risk | `uprn`, baseline metric(s) to perturb (cost, demand, carbon, etc.) | scenario tags, volatility class, sensitivity labels |
+| Financial | `id`, intervention cost field (for example `estimatedPVCost`) | `capex`, `opex`, financing parameters, discount-rate inputs |
+| Social | `id`, `fuelPovertyScore` (or equivalent priority metric) | `deprivationIndex`, vulnerability flags, tenure |
+| Policy | `id`, year/timeline fields used by policy rules | local policy zone, planning class, permit status |
+| Grid | `id`, `substationId`, demand/export fields used by checks | feeder id, constrained-area flag, upgrade queue status |
+| Optimization | `id`, benefit + cost fields (for ranking/constraints) | readiness score, confidence/uncertainty score |
+| Geographic | `id`, geographic grouping field (`region`, `lsoa`, etc.) | urban/rural class, spatial cluster id, district code |
+| Timeseries | `id`, seasonal/load profile inputs | flexibility score, hourly shape id, storage coupling fields |
+| Transport | `id`, EV charging demand/load fields, corridor/group id | charger type mix, fleet assumptions, travel-demand class |
+| Risk | `id`, baseline metric(s) to perturb (cost, demand, carbon, etc.) | scenario tags, volatility class, sensitivity labels |
 
-When in doubt, start with `uprn` + the exact fields referenced by your `filter`, `prioritise`, and `upgrade` functions, then add plugin-specific columns incrementally.
+When in doubt, start with `id` + the exact fields referenced by your `filter`, `prioritise`, and `upgrade` functions. If you are using energy-specific plugins, they may default to looking for `uprn` but this can be mapped to any `id` field in your configuration.
 
 ## What Is a Facet?
 

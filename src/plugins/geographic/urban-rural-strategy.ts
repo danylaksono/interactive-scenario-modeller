@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type UrbanRuralStrategyOptions = {
   name?: string;
@@ -26,19 +26,19 @@ export function createUrbanRuralStrategyPlugin(
   );
   const defaultPreferred = options.preferAreaType ? normalizeAreaType(options.preferAreaType) : "";
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const stateConfig = ((context.state as any)?.[stateConfigKey] ?? {}) as {
       allowedAreaTypes?: string[];
     };
 
-    const areaType = normalizeAreaType((building as any)?.[areaTypeField]);
+    const areaType = normalizeAreaType((entity as any)?.[areaTypeField]);
     if (!areaType) return false;
 
     const allowed = (stateConfig.allowedAreaTypes ?? defaultAllowed).map((item) => normalizeAreaType(item));
     return allowed.includes(areaType);
   };
 
-  const prioritise = (a: Building, b: Building, context: SimulationContext) => {
+  const prioritise = (a: Entity, b: Entity, context: SimulationContext) => {
     const stateConfig = ((context.state as any)?.[stateConfigKey] ?? {}) as {
       preferAreaType?: string;
     };

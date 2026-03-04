@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type GridEnergyBalanceReportingPluginOptions = {
   name?: string;
@@ -59,18 +59,18 @@ export function createGridEnergyBalanceReportingPlugin(
   const outputTotalRequirementKey = options.outputTotalRequirementKey ?? "totalEnergyRequirementKw";
   const outputRemainingHeadroomKey = options.outputRemainingHeadroomKey ?? "remainingHeadroomKw";
 
-  const upgrade = (building: Building, context: SimulationContext) => {
+  const upgrade = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
 
-    const substationIdRaw = (building as any)?.[substationIdField];
+    const substationIdRaw = (entity as any)?.[substationIdField];
     const substationId =
       substationIdRaw === undefined || substationIdRaw === null
         ? ""
         : String(substationIdRaw);
 
-    const demandRequirement = Math.max(0, toNumber((building as any)?.[demandRequirementField], 0));
-    const generationRequirement = Math.max(0, toNumber((building as any)?.[generationRequirementField], 0));
+    const demandRequirement = Math.max(0, toNumber((entity as any)?.[demandRequirementField], 0));
+    const generationRequirement = Math.max(0, toNumber((entity as any)?.[generationRequirementField], 0));
     const totalRequirement = demandRequirement + generationRequirement;
 
     state[balanceStateKey] = state[balanceStateKey] ?? {};

@@ -78,7 +78,7 @@ export function buildSimulatedDataFacet(
   const pushStatsKeys = (obj: any) => {
     if (!obj) return;
     for (const k of Object.keys(obj)) {
-      if (k === 'uprn' || k === 'id' || k === 'building' || k === 'entity' || k === 'year' || k === 'geometry') continue;
+      if (k === 'uprn' || k === 'id' || k === 'entity' || k === 'entity' || k === 'year' || k === 'geometry') continue;
       const lk = ci(k);
       if (reserved.has(lk) || seen.has(lk)) continue;
       if (!statsKeySeen.has(lk)) { statsKeySeen.add(lk); statsKeyOrder.push(k); seen.add(lk); }
@@ -92,7 +92,7 @@ export function buildSimulatedDataFacet(
     for (const item of items) {
       if (!item) continue;
       const stats = item.stats ?? {};
-      const id = item.building ?? item.entity ?? stats.uprn ?? stats.id ?? stats.building ?? stats.entity;
+      const id = item.entity ?? item.entity ?? stats.uprn ?? stats.id ?? stats.entity ?? stats.entity;
       if (id == null) continue;
       metricEntries.push({ id: String(id), year: yearKey, stats });
       pushStatsKeys(stats);
@@ -152,7 +152,7 @@ export function buildSimulatedDataFacet(
   // Use custom output builder if provided
   if (outputBuilder) {
     // For outputBuilder, we might still want to provide array format if that's what's expected,
-    // but building objects is more robust for internal chaining.
+    // but entity objects is more robust for internal chaining.
     // If outputBuilder expects arrays, it can do Object.values(row) based on columns.
     return outputBuilder(columns, data.map(r => columns.map(c => r[c])), facet);
   }

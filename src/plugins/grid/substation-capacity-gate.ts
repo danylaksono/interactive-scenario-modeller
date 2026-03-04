@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type SubstationCapacityGatePluginOptions = {
   name?: string;
@@ -52,11 +52,11 @@ export function createSubstationCapacityGatePlugin(
   const loadStateKey = options.loadStateKey ?? "substationLoads";
   const strictMissingCapacity = options.strictMissingCapacity ?? true;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
 
-    const substationIdRaw = (building as any)?.[substationIdField];
+    const substationIdRaw = (entity as any)?.[substationIdField];
     const substationId =
       substationIdRaw === undefined || substationIdRaw === null
         ? ""
@@ -64,7 +64,7 @@ export function createSubstationCapacityGatePlugin(
 
     if (!substationId) return false;
 
-    const demandIncrement = toNumber((building as any)?.[demandIncrementField], 0);
+    const demandIncrement = toNumber((entity as any)?.[demandIncrementField], 0);
 
     const capacities = state[capacityStateKey];
     const capacity = resolveCapacity(capacities, year, substationId);

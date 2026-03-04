@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type PolicyTimelineValidatorPluginOptions = {
   name?: string;
@@ -11,7 +11,7 @@ export type PolicyTimelineValidatorPluginOptions = {
 };
 
 type PolicyRecord = {
-  enabledBuildingTypes?: string[];
+  enabledEntityTypes?: string[];
   minEfficiencyStandard?: number;
 };
 
@@ -53,12 +53,12 @@ function validateTimelineShape(
     const record = policy as PolicyRecord;
 
     if (
-      record.enabledBuildingTypes !== undefined &&
-      (!Array.isArray(record.enabledBuildingTypes) ||
-        record.enabledBuildingTypes.some((type) => typeof type !== "string"))
+      record.enabledEntityTypes !== undefined &&
+      (!Array.isArray(record.enabledEntityTypes) ||
+        record.enabledEntityTypes.some((type) => typeof type !== "string"))
     ) {
       errors.push(
-        `${pluginName}: enabledBuildingTypes for year ${parsedYear} must be an array of strings`,
+        `${pluginName}: enabledEntityTypes for year ${parsedYear} must be an array of strings`,
       );
     }
 
@@ -122,7 +122,7 @@ export function createPolicyTimelineValidatorPlugin(
   const strictCoverage = options.strictCoverage ?? false;
   const requireCurrentYearPolicy = options.requireCurrentYearPolicy ?? false;
 
-  const constraint = (_building: Building, context: SimulationContext) => {
+  const constraint = (_entity: Entity, context: SimulationContext) => {
     const markerKey = `__validated_${name}`;
     const state = context.state as Record<string, unknown>;
 

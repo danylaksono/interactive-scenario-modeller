@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type TransportCorridorConstraintOptions = {
   name?: string;
@@ -53,11 +53,11 @@ export function createTransportCorridorConstraintPlugin(
   const maxOverbuildFactor = options.maxOverbuildFactor ?? 1;
   const strictMissingRequirement = options.strictMissingRequirement ?? false;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
 
-    const corridorRaw = (building as any)?.[corridorField];
+    const corridorRaw = (entity as any)?.[corridorField];
     const corridor = corridorRaw === undefined || corridorRaw === null ? "" : String(corridorRaw);
     if (!corridor) return false;
 
@@ -66,7 +66,7 @@ export function createTransportCorridorConstraintPlugin(
 
     const safeRequired = Math.max(0, requiredUnits);
     const maxAllowed = safeRequired * Math.max(0, maxOverbuildFactor);
-    const deliveredIncrement = Math.max(0, toNumber((building as any)?.[deliveredUnitsField], 1));
+    const deliveredIncrement = Math.max(0, toNumber((entity as any)?.[deliveredUnitsField], 1));
 
     state[deliveredStateKey] = state[deliveredStateKey] ?? {};
     state[deliveredStateKey][year] = state[deliveredStateKey][year] ?? {};

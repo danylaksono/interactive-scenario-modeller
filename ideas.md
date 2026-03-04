@@ -1,17 +1,22 @@
 # Intervention Engine Idea Inventory
 
+## Done & Validated (March 2026)
+- **Domain Agnostic Core**: Renamed all outward-facing terms (`building` → `entity`, `Upgrade` → `Transform/Apply`). The library now operates on generic `Entity` objects with an `id` and `geometry`.
+- **Slim & Modular Packaging**: Refactored the library into a multi-entry point system. Users can now import `@core` (~25KB) or opt-in to domain plugins (grid, financial, geographic, optimization) to keep production bundles minimal.
+- **Agent-Ready Instructions**: Created `instructions.txt` specifically for LLM-orchestrated visual analytics, prioritizing string-based plugin references and the Filter-Prioritise-Transform lifecycle.
+- **Improved Data Schema**: Standardized on a generic `id` requirement instead of the legacy `uprn`, making it compatible with any spatial or attribute-based dataset.
+
 ## Core insight
-- The existing Filter → Prioritise → Upgrade trilogy already captures the workflow for any entity stock that evolves under constraints, which makes the modeller immediately usable outside energy; an intervention just needs a facet, three predicates, and a short property spec.
-- Facet adapters, predicate registry, and plugins keep the core lean and data-agnostic, so the only energy-specific baggage is in names and documentation.
+- The existing Filter → Prioritise → Transform trilogy already captures the workflow for any entity stock that evolves under constraints.
+- Facet adapters, predicate registry, and plugins keep the core lean and data-agnostic.
 
 ## Minimal, additive refinements
-1. Rename outward-facing terms (`building` → `entity`/`feature`, `Upgrade` → `Apply` or `Transform`) so newcomers from planning, conservation, or transport instantly grok the contract while leaving internal identifiers untouched.
-2. Treat geometries as first-class inputs/outputs (GeoJSON Feature in the entity interface, carry `geometry` through `simulatedFacet`) so filters/prioritisers can rely on spatial predicates without bespoke wiring.
-3. Introduce a duckdb-wasm facet adapter that lets you run declarative SQL filters/aggregations before a scenario run, keeping the predicate API while enabling joins, grouping, and heavier analytics on large tables.
-4. Publish a spatial predicate bundle (`within`, `buffer`, `intersects`, `nearest`, `distanceTo`, `area`, `centroid`, etc.) so GIS users can reuse Turf-style helpers via `registerPredicate`/plugins rather than copying logic into every scenario.
-5. Make the timestep configurable (year, month, or custom events) and expose a lightweight global Resource/Constraint layer that prioritise predicates can query (e.g., budgets, installer headroom, spatial quotas like “max five upgrades per km²”).
-6. Standardise outputs into a delta log plus an updated FeatureCollection/row table so dashboards can animate change layers, time sliders, and choropleths without manual joins.
-7. Add a Web Worker wrapper + optional spatial index (rbush/kdbush) to keep large (>50k feature) runs responsive in-browser while keeping the worker API aligned with the existing intervention lifecycle.
+1. Treat geometries as first-class inputs/outputs (GeoJSON Feature in the entity interface, carry `geometry` through `simulatedFacet`) so filters/prioritisers can rely on spatial predicates without bespoke wiring.
+2. Introduce a duckdb-wasm facet adapter that lets you run declarative SQL filters/aggregations before a scenario run, keeping the predicate API while enabling joins, grouping, and heavier analytics on large tables.
+3. Publish a spatial predicate bundle (`within`, `buffer`, `intersects`, `nearest`, `distanceTo`, `area`, `centroid`, etc.) so GIS users can reuse Turf-style helpers via `registerPredicate`/plugins rather than copying logic into every scenario.
+4. Make the timestep configurable (year, month, or custom events) and expose a lightweight global Resource/Constraint layer that prioritise predicates can query (e.g., budgets, installer headroom, spatial quotas like “max five upgrades per km²”).
+5. Standardise outputs into a delta log plus an updated FeatureCollection/row table so dashboards can animate change layers, time sliders, and choropleths without manual joins.
+6. Add a Web Worker wrapper + optional spatial index (rbush/kdbush) to keep large (>50k feature) runs responsive in-browser while keeping the worker API aligned with the existing intervention lifecycle.
 
 ## GIS-friendly use cases to prove the generality
 1. **Urban & regional planning** — Entities become parcels/street segments; interventions add green roofs, rezoning, or transit improvements; filters use deprivation, density, proximity; outputs feed animated land-use maps and 3D extrusions.
@@ -43,7 +48,7 @@
 - With light spatial polish, it becomes a general-purpose intervention engine that happens to be perfect for maps and geovisualisation.
 
 ## Next experiments
-1. Sketch a GeoJSON facet adapter + spatial predicate plugin and wire it into a sample intervention so dashboards can surface geometries alongside metrics without extra joins.
-2. Document/apply the toolkit to a non-energy scenario (parcel zoning, restoration sequencing, or emergency resource allocation) to prove the domain-agnostic pitch to future npm consumers.
-3. If you scale to large GIS datasets, drop in a spatial index + worker hook in the predicate layer so `filter`/`prioritise` can answer `nearest`/`within` quickly without touching the core loop.
-4. Prototype a duckdb-backed facet + sync strategy so you can benchmark SQL filtering/joining before passing data into predicates and keep metrics/state in sync.
+1. **DuckDB Facet**: Prototype a duckdb-backed facet + sync strategy so you can benchmark SQL filtering/joining before passing data into predicates.
+2. **Spatial Polish**: Drop in a spatial index + worker hook in the predicate layer so `filter`/`prioritise` can answer `nearest`/`within` quickly without touching the core loop.
+3. **Multi-Domain Demos**: Apply the toolkit to a non-energy scenario (Restoration sequencing or Emergency resource allocation) to prove the domain-agnostic pitch.
+4. **Intervene Namespace**: Consider renaming npm package to `@intervene/core` to fully move away from `interactive-scenario-modeller` as the library grows.

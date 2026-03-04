@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type SeasonalDemandGateOptions = {
   name?: string;
@@ -27,15 +27,15 @@ function normalizeText(value: unknown): string {
 }
 
 function resolveSeason(
-  building: Building,
+  entity: Entity,
   context: SimulationContext,
   seasonField: string,
   seasonStateKey: string,
 ): string {
   const stateSeason = (context.state as any)?.[seasonStateKey]?.[context.year];
-  const buildingSeason = (building as any)?.[seasonField];
+  const entitySeason = (entity as any)?.[seasonField];
 
-  return normalizeText(stateSeason) || normalizeText(buildingSeason) || "all";
+  return normalizeText(stateSeason) || normalizeText(entitySeason) || "all";
 }
 
 function resolveCapacity(
@@ -73,17 +73,17 @@ export function createSeasonalDemandGatePlugin(
   const loadStateKey = options.loadStateKey ?? "seasonalDemandLoad";
   const strictMissingCapacity = options.strictMissingCapacity ?? true;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
 
-    const season = resolveSeason(building, context, seasonField, seasonStateKey);
-    const segmentRaw = (building as any)?.[segmentField];
+    const season = resolveSeason(entity, context, seasonField, seasonStateKey);
+    const segmentRaw = (entity as any)?.[segmentField];
     const segment =
       segmentRaw === undefined || segmentRaw === null ? "" : String(segmentRaw);
     if (!segment) return false;
 
-    const demandIncrement = Math.max(0, toNumber((building as any)?.[demandIncrementField], 0));
+    const demandIncrement = Math.max(0, toNumber((entity as any)?.[demandIncrementField], 0));
     const capacity = resolveCapacity(state[capacityStateKey], year, season, segment);
 
     if (capacity === null) {

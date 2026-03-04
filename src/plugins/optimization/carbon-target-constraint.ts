@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type CarbonTargetConstraintOptions = {
   name?: string;
@@ -39,7 +39,7 @@ export function createCarbonTargetConstraintPlugin(
   const projectedReductionField = options.projectedReductionField ?? "carbonReductionPotential";
   const allowWhenMissingTarget = options.allowWhenMissingTarget ?? true;
 
-  const constraint = (_building: Building, context: SimulationContext) => {
+  const constraint = (_entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
     const reservedAnnualKey = `__reservedCarbonByYear_${name}`;
@@ -53,10 +53,10 @@ export function createCarbonTargetConstraintPlugin(
     const cumulativeActual = toNumber(state[cumulativeActualKey], 0);
     const cumulativeReserved = toNumber(state[reservedCumulativeKey], 0);
 
-    const building = _building as Building;
+    const entity = _entity as Entity;
     const projectedReduction = Math.max(
       0,
-      toNumber((building as any)?.[projectedReductionField], 0),
+      toNumber((entity as any)?.[projectedReductionField], 0),
     );
 
     const hasAnnualTarget = annualTarget > 0;

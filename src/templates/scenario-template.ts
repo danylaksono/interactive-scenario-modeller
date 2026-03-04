@@ -7,7 +7,7 @@ import {
 export type ScenarioTemplateStateDefaults = {
   budgetAllocation?: Record<number, number>;
   budgetSpent?: Record<number, number>;
-  activePolicies?: Record<number, { enabledBuildingTypes?: string[]; minEfficiencyStandard?: number }>;
+  activePolicies?: Record<number, { enabledEntityTypes?: string[]; minEfficiencyStandard?: number }>;
   requiredPolicyYears?: number[];
   substationCapacities?: Record<string, number> | Record<number, Record<string, number>>;
   substationLoads?: Record<number, Record<string, number>>;

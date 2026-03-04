@@ -22,7 +22,7 @@ export type MultiCriteriaOptions = {
 
 /**
  * A general-purpose Multi-Criteria Prioritiser.
- * Works with any entity type (Buildings, H3, Parcels) by using getValue getters.
+ * Works with any entity type (Entitys, H3, Parcels) by using getValue getters.
  */
 export function createMultiCriteriaPrioritiserPlugin(
     options: MultiCriteriaOptions = {},

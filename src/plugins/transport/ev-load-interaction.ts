@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type EVLoadInteractionPluginOptions = {
   name?: string;
@@ -58,11 +58,11 @@ export function createEVLoadInteractionPlugin(
   const evDemandWeight = options.evDemandWeight ?? 1;
   const strictMissingCapacity = options.strictMissingCapacity ?? true;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
 
-    const segmentRaw = (building as any)?.[segmentField];
+    const segmentRaw = (entity as any)?.[segmentField];
     const segment = segmentRaw === undefined || segmentRaw === null ? "" : String(segmentRaw);
     if (!segment) return false;
 
@@ -71,8 +71,8 @@ export function createEVLoadInteractionPlugin(
       return !strictMissingCapacity;
     }
 
-    const baseIncrement = toNumber((building as any)?.[demandIncrementField], 0);
-    const evDemand = toNumber((building as any)?.[evDemandField], 0);
+    const baseIncrement = toNumber((entity as any)?.[demandIncrementField], 0);
+    const evDemand = toNumber((entity as any)?.[evDemandField], 0);
     const baselineEVLoad = toNumber(
       resolveByYearAndSegment(state[evBaselineStateKey], year, segment),
       0,
@@ -98,7 +98,7 @@ export function createEVLoadInteractionPlugin(
       name,
       version,
       kind: ["constraint"],
-      description: "Gates upgrades by combining baseline EV load and per-building EV charging demand in capacity checks",
+      description: "Gates upgrades by combining baseline EV load and per-entity EV charging demand in capacity checks",
       entry: "internal:plugin",
       compat: {
         package: "interactive-scenario-modeller",

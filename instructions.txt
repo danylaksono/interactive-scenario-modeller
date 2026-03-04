@@ -1,103 +1,59 @@
-interactive-scenario-modeller — LLM Instructions
+interactive-scenario-modeller — LLM 7 Instructions (Agent-Ready)
 
 Purpose
-- Use this library to model multi-year decarbonisation scenarios with reusable interventions, predicates, and plugins.
-- Prefer string-based plugin/predicate references in scenarios that need persistence/serialization.
-- Use the plugin ecosystem to compose constraints, prioritisation, upgrades, and validation logic by use case.
+- Use this library to model multi-year entity stock evolution (Filter → Prioritise → Transform).
+- Designed for agent-orchestrated visual analytics: keep data-agnostic, modular, and slim.
+- Core engine handles the simulation loop; domain expertise is provided via opt-in plugins.
 
-Core Concepts
-1) Intervention
-- Main simulation unit.
-- Configure with: facet, startYear/endYear, init hooks, filter, prioritise, upgrade.
-- filter decides eligibility, prioritise sets order, upgrade applies effect/metrics.
+Core Concepts: The Trinity P-F-T
+1) Filter (Eligibility)
+- Determines which entities/features are candidates for a transformation in a given step.
+- Context: `(entity, context) => boolean`.
 
-2) Facet
-- Provide building rows via arrayAdapter(data) or custom adapter with getRowCount/getRow.
+2) Prioritise (Ranking)
+- Determines the order of processing when resources (budget, capacity) are limited.
+- Context: `(e1, e2, context) => number` (Sort logic). Supports "random" or MCDA plugins.
 
-3) Context (SimulationContext)
-- context.year: current simulation year
-- context.state: mutable scenario state shared across years
-- context.resolvePredicate(name): resolve registered predicate by name
-- context.resolvePlugin(name): resolve registered plugin by name
+3) Transform / Upgrade (Effect)
+- Applies the change and returns metric deltas.
+- Context: `(entity, context) => MetricDelta`.
 
-4) Registry and Plugins
-- registerPredicate(name, fn): register reusable predicate function
-- registerPlugin(plugin): register plugin package with manifest and handlers
-- String references in interventions:
-  - Predicate by name: "scenario:budgetConstraint"
-  - Plugin export by name: "financial-budget-spend-tracker:upgrade"
+Library Architecture (Modular Imports)
+- Core: `interactive-scenario-modeller` (SimulationRunner, Intervention, types).
+- Plugins: `interactive-scenario-modeller/plugins/<category>` (grid, financial, geographic, etc.).
+- Global Registry: Use `registerPredicate` and `registerPlugin` for serializable scenarios.
 
-Recommended Execution Pattern
-1) Create facet
-2) Install required plugin bundles or specific plugins
-3) Build scenario defaults with createScenarioTemplate(...) when appropriate
-4) Create one or more Intervention instances
-5) Run simulate() or use SimulationRunner for multi-step flows
-6) Inspect result.metrics, result.state, and result.buildings
+Entity & Facet Data
+- Entities: Generic objects with an `id` and optional `geometry`. Avoid hardcoding `uprn`.
+- Facets: Use `arrayAdapter(data)` for in-memory collections or custom adapters for streaming/SQL.
+- Geometry: First-class support for GeoJSON logic (`within`, `distanceTo`) via `geographic` plugins.
 
-Quick Start (Preferred Modern Flow)
-1) Install bundles
-- installFinancialPlugins()
-- installSocialPlugins()
-- installPolicyPlugins()
-- installGridPlugins()
-- or installAllPlugins()
+Context (SimulationContext)
+- `context.year` / `context.step`: Current timestep.
+- `context.resources`: Global bank for cross-intervention constraints (`consume`, `has`).
+- `context.state`: Shared mutable state across the entire simulation run.
+- `context.random()`: Deterministic RNG for reproducible "what-if" outcomes.
 
-2) Optionally create a scenario template
-- createScenarioTemplate({ stateDefaults, pluginOptions })
-- Use template.withInit(...) in intervention init for reusable state wiring
+Recommended Agent Workflow for Dashboards
+1) Initialize: Create `SimulationRunner` and register domain plugins.
+2) Setup: Define `Intervention` instances using string-based plugin references for UI-driven config.
+3) Run: Execute `runner.run()` or `intervention.simulate()`.
+4) Visualize: Map `result.metrics` to charts and `toGeoJSON(intervention.simulatedFacet)` to maps.
 
-3) Use plugin export refs in interventions
-- filter: bundleRef.constraint exportRef
-- upgrade: bundleRef.upgrade exportRef
+Plugin Categories Available
+- geographic: Spatial clustering, regional budget splits, urban/rural strategies.
+- optimization: Multi-criteria prioritiser (AHP/MCDA), carbon target constraints.
+- transport: EV load interaction, corridor constraints.
+- financial: Budget spend tracking, financing models (Capex/Opex/PPA).
+- grid: Substation capacity gates, sequential enablement (pre-requisites), headroom.
+- risk: Monte Carlo and Sensitivity analysis runners.
 
-Plugin Bundles Available
-- Financial bundle
-  - Budget spend tracker (upgrade)
-  - Financing model (upgrade)
-- Social bundle
-  - Fuel poverty priority (constraint)
-- Policy bundle
-  - Policy timeline validator (constraint)
-- Grid bundle
-  - Substation capacity gate (constraint)
-  - Sequential enablement (constraint)
-  - Generation headroom allocation (constraint)
-  - Grid energy balance reporting (upgrade)
-- Timeseries bundle
-  - Seasonal demand gate (constraint)
-  - Load profile scoring (prioritiser)
-  - Technology coupling (upgrade)
-- Transport bundle
-  - EV load interaction (constraint)
-  - Transport corridor constraint (constraint)
-- Risk bundle
-  - Volatility scenario (upgrade)
+Implementation Tips
+- Performance: The runner is optimized for 50k+ entities in-browser.
+- Memory: Interventions write deltas back to the facet; successive interventions see updated states.
+- Resource Bounds: Always use `context.resources.consume()` for shared pools (e.g., "Max 500 installs per year").
+- Schema Mapping: All plugins support option mapping (e.g., `buildingIdField: "asset_tag"`).
 
-Risk helpers available
-- runSensitivityAnalysis(opts)
-- runMonteCarloAnalysis(opts)
-
-When to Use Each Built-in Plugin
-- Budget Spend Tracker
-  - Use when annual spend accumulation must be standardized
-  - Reads cost field, updates state budget-spend key, emits cost metrics
-
-- Financing Model (cash/lease/PPA)
-  - Use for scenario economics and annualized financing comparisons
-  - Emits annualPayment, npvCost, modelType (or mapped output keys)
-
-- Fuel Poverty Priority
-  - Use for social + carbon blended targeting
-  - Weighted threshold filtering with optional state overrides
-
-- Policy Timeline Validator
-  - Use as a precondition gate to validate policy timeline shape
-  - Can enforce required year coverage
-  - Note: filter errors are logged by Intervention and result in skipped buildings
-
-- Substation Capacity Gate
-  - Use for grid constraints with per-year or flat capacities
   - Tracks reserved load in state and blocks over-capacity selections
 
 - Generation Headroom Allocation

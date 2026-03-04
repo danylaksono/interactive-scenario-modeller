@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type SequentialEnablementPluginOptions = {
   name?: string;
@@ -7,7 +7,7 @@ export type SequentialEnablementPluginOptions = {
   requiredInterventionField?: string;
   completedInterventionsField?: string;
   stateCompletionsKey?: string;
-  buildingIdField?: string;
+  entityIdField?: string;
   defaultRequiredIntervention?: string;
   allowIfNoRequirement?: boolean;
 };
@@ -22,12 +22,12 @@ function toStringArray(value: unknown): string[] {
   return [];
 }
 
-function hasCompletionOnBuilding(
-  building: Building,
+function hasCompletionOnEntity(
+  entity: Entity,
   required: string,
   completedInterventionsField: string,
 ): boolean {
-  const completed = (building as any)?.[completedInterventionsField];
+  const completed = (entity as any)?.[completedInterventionsField];
 
   if (Array.isArray(completed)) return completed.includes(required);
   if (completed && typeof completed === "object") return Boolean((completed as any)[required]);
@@ -39,7 +39,7 @@ function hasCompletionInState(
   state: Record<string, any>,
   required: string,
   stateCompletionsKey: string,
-  buildingId: string,
+  entityId: string,
 ): boolean {
   const store = state[stateCompletionsKey];
   if (!store || typeof store !== "object") return false;
@@ -48,8 +48,8 @@ function hasCompletionInState(
   if (!bucket) return false;
   if (bucket === true) return true;
 
-  if (Array.isArray(bucket)) return bucket.includes(buildingId);
-  if (typeof bucket === "object") return Boolean(bucket[buildingId]);
+  if (Array.isArray(bucket)) return bucket.includes(entityId);
+  if (typeof bucket === "object") return Boolean(bucket[entityId]);
 
   return false;
 }
@@ -62,31 +62,31 @@ export function createSequentialEnablementPlugin(
   const requiredInterventionField = options.requiredInterventionField ?? "requiresIntervention";
   const completedInterventionsField = options.completedInterventionsField ?? "completedInterventions";
   const stateCompletionsKey = options.stateCompletionsKey ?? "completedInterventionsByName";
-  const buildingIdField = options.buildingIdField ?? "uprn";
+  const entityIdField = options.entityIdField ?? "uprn";
   const defaultRequiredIntervention = options.defaultRequiredIntervention;
   const allowIfNoRequirement = options.allowIfNoRequirement ?? true;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const requirements = toStringArray(
-      (building as any)?.[requiredInterventionField] ?? defaultRequiredIntervention,
+      (entity as any)?.[requiredInterventionField] ?? defaultRequiredIntervention,
     );
 
     if (requirements.length === 0) return allowIfNoRequirement;
 
-    const buildingIdRaw = (building as any)?.[buildingIdField] ?? (building as any)?.uprn;
-    const buildingId =
-      buildingIdRaw === undefined || buildingIdRaw === null ? "" : String(buildingIdRaw);
+    const entityIdRaw = (entity as any)?.[entityIdField] ?? (entity as any)?.uprn;
+    const entityId =
+      entityIdRaw === undefined || entityIdRaw === null ? "" : String(entityIdRaw);
 
-    if (!buildingId) return false;
+    if (!entityId) return false;
 
     const state = context.state as Record<string, any>;
 
     return requirements.every((required) => {
-      if (hasCompletionOnBuilding(building, required, completedInterventionsField)) {
+      if (hasCompletionOnEntity(entity, required, completedInterventionsField)) {
         return true;
       }
 
-      return hasCompletionInState(state, required, stateCompletionsKey, buildingId);
+      return hasCompletionInState(state, required, stateCompletionsKey, entityId);
     });
   };
 

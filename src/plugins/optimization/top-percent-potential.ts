@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type TopPercentPotentialOptions = {
   name?: string;
@@ -29,9 +29,9 @@ export function createTopPercentPotentialPlugin(
   const percentile = options.percentile ?? 0.01;
   const statePercentileKey = options.statePercentileKey ?? "topPercentile";
 
-  const constraint = (building: Building, context: SimulationContext) => {
-    const rank = toNumber((building as any)?.[rankField], Number.NaN);
-    const rankCount = toNumber((building as any)?.[rankCountField], Number.NaN);
+  const constraint = (entity: Entity, context: SimulationContext) => {
+    const rank = toNumber((entity as any)?.[rankField], Number.NaN);
+    const rankCount = toNumber((entity as any)?.[rankCountField], Number.NaN);
     if (!Number.isFinite(rank) || !Number.isFinite(rankCount) || rankCount <= 0) return false;
 
     const statePercentile = toNumber((context.state as any)?.[statePercentileKey], percentile);
@@ -46,7 +46,7 @@ export function createTopPercentPotentialPlugin(
       name,
       version,
       kind: ["constraint"],
-      description: "Selects buildings within top percentile using precomputed potential rank",
+      description: "Selects entities within top percentile using precomputed potential rank",
       entry: "internal:plugin",
       compat: {
         package: "interactive-scenario-modeller",

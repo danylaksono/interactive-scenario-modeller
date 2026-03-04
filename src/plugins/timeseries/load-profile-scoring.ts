@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type LoadProfileScoringOptions = {
   name?: string;
@@ -29,7 +29,7 @@ export function createLoadProfileScoringPlugin(
   const flexibilityField = options.flexibilityField ?? "flexibilityScore";
   const stateWeightsKey = options.stateWeightsKey ?? "loadProfileWeights";
 
-  const prioritise = (a: Building, b: Building, context: SimulationContext) => {
+  const prioritise = (a: Entity, b: Entity, context: SimulationContext) => {
     const weights = ((context.state as any)?.[stateWeightsKey] ?? {}) as {
       peakReduction?: number;
       loadShift?: number;
@@ -40,10 +40,10 @@ export function createLoadProfileScoringPlugin(
     const loadShiftWeight = toNumber(weights.loadShift, 0.3);
     const flexibilityWeight = toNumber(weights.flexibility, 0.2);
 
-    const score = (building: Building) =>
-      toNumber((building as any)?.[peakReductionField], 0) * peakWeight +
-      toNumber((building as any)?.[loadShiftField], 0) * loadShiftWeight +
-      toNumber((building as any)?.[flexibilityField], 0) * flexibilityWeight;
+    const score = (entity: Entity) =>
+      toNumber((entity as any)?.[peakReductionField], 0) * peakWeight +
+      toNumber((entity as any)?.[loadShiftField], 0) * loadShiftWeight +
+      toNumber((entity as any)?.[flexibilityField], 0) * flexibilityWeight;
 
     return score(b) - score(a);
   };

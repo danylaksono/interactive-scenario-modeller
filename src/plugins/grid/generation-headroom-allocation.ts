@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type GenerationHeadroomAllocationPluginOptions = {
   name?: string;
@@ -52,11 +52,11 @@ export function createGenerationHeadroomAllocationPlugin(
   const allocatedStateKey = options.allocatedStateKey ?? "substationGenerationAllocated";
   const strictMissingHeadroom = options.strictMissingHeadroom ?? true;
 
-  const constraint = (building: Building, context: SimulationContext) => {
+  const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
     const year = context.year;
 
-    const substationIdRaw = (building as any)?.[substationIdField];
+    const substationIdRaw = (entity as any)?.[substationIdField];
     const substationId =
       substationIdRaw === undefined || substationIdRaw === null
         ? ""
@@ -64,7 +64,7 @@ export function createGenerationHeadroomAllocationPlugin(
 
     if (!substationId) return false;
 
-    const requestedExport = Math.max(0, toNumber((building as any)?.[generationExportField], 0));
+    const requestedExport = Math.max(0, toNumber((entity as any)?.[generationExportField], 0));
     const headroom = resolveHeadroom(state[headroomStateKey], year, substationId);
 
     if (headroom === null) {

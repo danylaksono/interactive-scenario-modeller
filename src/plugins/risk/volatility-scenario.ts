@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type VolatilityScenarioPluginOptions = {
   name?: string;
@@ -65,9 +65,9 @@ export function createVolatilityScenarioPlugin(
   const fallbackMultiplier = options.fallbackMultiplier ?? 1;
   const volatilityMapStateKey = options.volatilityMapStateKey ?? "priceVolatilityMultipliers";
 
-  const upgrade = (building: Building, context: SimulationContext) => {
+  const upgrade = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
-    const basePrice = toNumber((building as any)?.[inputPriceField], 0);
+    const basePrice = toNumber((entity as any)?.[inputPriceField], 0);
 
     const configuredYear = toNumber(state[yearStateKey], context.year);
     const year = Number.isFinite(configuredYear) ? configuredYear : context.year;
@@ -95,7 +95,7 @@ export function createVolatilityScenarioPlugin(
       name,
       version,
       kind: ["upgrade"],
-      description: "Applies year/season volatility multipliers to building price metrics",
+      description: "Applies year/season volatility multipliers to entity price metrics",
       entry: "internal:plugin",
       compat: {
         package: "interactive-scenario-modeller",

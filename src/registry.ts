@@ -41,7 +41,7 @@ export function registerPredicate(name: string, fn: PredicateFn) {
  * ```typescript
  * const fn = getPredicate('costEffectiveness');
  * if (fn) {
- *   const result = fn(building1, building2, state);
+ *   const result = fn(entity1, entity2, state);
  * }
  * ```
  */

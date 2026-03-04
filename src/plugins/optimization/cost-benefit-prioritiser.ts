@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type CostBenefitPrioritiserOptions = {
   name?: string;
@@ -29,7 +29,7 @@ export function createCostBenefitPrioritiserPlugin(
   const stateWeightsKey = options.stateWeightsKey ?? "costBenefitWeights";
   const fallbackCost = options.fallbackCost ?? 1;
 
-  const prioritise = (a: Building, b: Building, context: SimulationContext) => {
+  const prioritise = (a: Entity, b: Entity, context: SimulationContext) => {
     const weights = ((context.state as any)?.[stateWeightsKey] ?? {}) as {
       benefit?: number;
       cost?: number;
@@ -55,7 +55,7 @@ export function createCostBenefitPrioritiserPlugin(
       name,
       version,
       kind: ["prioritiser"],
-      description: "Ranks buildings by weighted benefit-per-cost score",
+      description: "Ranks entities by weighted benefit-per-cost score",
       entry: "internal:plugin",
       compat: {
         package: "interactive-scenario-modeller",

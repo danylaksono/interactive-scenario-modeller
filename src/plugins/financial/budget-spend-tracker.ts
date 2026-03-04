@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type BudgetSpendTrackerOptions = {
   name?: string;
@@ -31,9 +31,9 @@ export function createBudgetSpendTrackerPlugin(
   const outputCumulativeCostKey = options.outputCumulativeCostKey ?? "cumulativeCost";
   const outputYearKey = options.outputYearKey ?? "year";
 
-  const upgrade = (building: Building, context: SimulationContext) => {
+  const upgrade = (entity: Entity, context: SimulationContext) => {
     const year = context.year;
-    const cost = toNumber((building as any)?.[costField], 0);
+    const cost = toNumber((entity as any)?.[costField], 0);
 
     const state = context.state as Record<string, any>;
     const budgetSpent =

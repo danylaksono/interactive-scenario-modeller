@@ -4,7 +4,7 @@ import { Intervention } from "./intervention";
  * Runs multiple interventions in sequence.
  * 
  * Useful for scenarios where multiple interventions need to be executed,
- * potentially building on each other's results.
+ * potentially entity on each other's results.
  * 
  * @example
  * ```typescript
@@ -43,7 +43,7 @@ export class SimulationRunner {
   /**
    * Runs all interventions in sequence.
    * 
-   * Interventions are executed one by one, with the resulting building state
+   * Interventions are executed one by one, with the resulting entity state
    * from each intervention passed as input to the next. This allows multiple
    * phases of a scenario to be modeled sequentially.
    * 
@@ -53,13 +53,13 @@ export class SimulationRunner {
    */
   run() {
     const results = [];
-    let buildings = null;
+    let entities = null;
     const sharedResources = this.resources instanceof Map ? this.resources : new Map(Object.entries(this.resources));
     
     for (const i of this.interventions) {
-      const res = i.simulate(buildings, sharedResources);
+      const res = i.simulate(entities, sharedResources);
       results.push({ name: i.name, result: res });
-      buildings = res.buildings;
+      entities = res.entities;
     }
     return results;
   }

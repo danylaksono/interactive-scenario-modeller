@@ -9,7 +9,7 @@ export type ScenarioObjectiveWeights = {
 };
 
 export type ScenarioPolicy = {
-  enabledBuildingTypes?: string[];
+  enabledEntityTypes?: string[];
   minEfficiencyStandard?: number;
 };
 

@@ -3,10 +3,9 @@ export type Entity = { [k: string]: any } & {
   uprn?: string | number;
   geometry?: any;
 };
-export type Building = Entity;
 export type State = { [k: string]: any };
 export type Metric = { [k: string]: any };
-export type Metrics = { [year: string]: Array<{ building?: string | number, entity?: string | number, stats: Metric }> };
+export type Metrics = { [year: string]: Array<{ id?: string | number, entity?: string | number, stats: Metric }> };
 
 /**
  * Standard context passed to all predicates and lifecycle hooks.
@@ -41,7 +40,6 @@ export interface SimulationContext {
 
 export type PropertySpec = {
   columns?: Array<{ name: string } | string> | string[];
-  buildingProperties?: any[];
   entityProperties?: any[];
   stateProperties?: any[];
   metrics?: string[];
@@ -53,7 +51,7 @@ export type PredicateUpgrade = ((entity: Entity, context: SimulationContext) => 
 export type PredicateTransform = PredicateUpgrade;
 
 export type SimulatedFacetOptions = {
-  /** Whether to include buildings that were not touched by any intervention */
+  /** Whether to include entities that were not touched by any intervention */
   includeUntouched?: boolean;
   /** Additional columns from the original facet to carry forward (e.g., geographic identifiers).
    * Defaults to empty array. Set to null to disable automatic column carrying.

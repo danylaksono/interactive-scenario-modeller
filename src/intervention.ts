@@ -1,4 +1,4 @@
-import { Entity, Building, State, Metrics, PropertySpec, PredicateFilter, PredicatePrioritise, PredicateUpgrade, PredicateTransform, SimulationContext } from "./types";
+import { Entity, State, Metrics, PropertySpec, PredicateFilter, PredicatePrioritise, PredicateUpgrade, PredicateTransform, SimulationContext } from "./types";
 import { buildSimulatedDataFacet } from "./simulated-facet";
 import { getPredicate } from "./registry";
 import { getPlugin } from "./plugin";
@@ -9,7 +9,7 @@ import { getPlugin } from "./plugin";
 export type InterventionOptions = {
   /** Human-readable description of the intervention */
   description?: string;
-  /** Data facet adapter providing building data. Must implement FacetLike interface. */
+  /** Data facet adapter providing entity data. Must implement FacetLike interface. */
   facet?: any; 
   /** Starting year for the intervention (inclusive) */
   startYear?: number;
@@ -17,9 +17,7 @@ export type InterventionOptions = {
   endYear?: number;
   /** Function returning property specification for inputs/outputs */
   propertySpec?: () => PropertySpec;
-  /** Function to transform facet rows into Building/Entity objects */
-  setupBuilding?: (row: any, building?: Building) => Building;
-  /** Alias for setupBuilding. Function to transform facet rows into Entity objects */
+  /** Function to transform facet rows into Entity objects */
   setupEntity?: (row: any, entity?: Entity) => Entity;
   /** Filter predicate: determines which entities are eligible for transformation. Can be a function or a registered name. */
   filter?: PredicateFilter;
@@ -51,7 +49,7 @@ export class Intervention {
   startYear: number | null;
   endYear: number | null;
   propertySpec?: () => PropertySpec;
-  setupBuilding?: (row: any, entity?: Entity) => Entity;
+  setupEntity?: (row: any, entity?: Entity) => Entity;
   
   private _filter: PredicateFilter;
   private _prioritise: PredicatePrioritise;
@@ -62,7 +60,7 @@ export class Intervention {
   initYear: (year: number, context: SimulationContext, metrics?: Metrics) => void;
   finaliseYear: (year: number, context: SimulationContext, metrics?: Metrics) => void;
   
-  entities: Entity[] | null;
+  private _entities: Entity[] | null;
   simulatedFacet: any | null;
 
   constructor(name: string, opts: InterventionOptions = {}) {
@@ -72,7 +70,7 @@ export class Intervention {
     this.startYear = opts.startYear ?? null;
     this.endYear = opts.endYear ?? null;
     this.propertySpec = opts.propertySpec;
-    this.setupBuilding = opts.setupEntity ?? opts.setupBuilding;
+    this.setupEntity = opts.setupEntity;
     
     this._filter = opts.filter ?? (() => true);
     this._prioritise = opts.prioritise ?? (() => 0);
@@ -83,15 +81,15 @@ export class Intervention {
     this.initYear = opts.initYear ?? (() => {});
     this.finaliseYear = opts.finaliseYear ?? (() => {});
     
-    this.entities = null;
+    this._entities = null;
     this.simulatedFacet = null;
   }
 
   /**
-   * Backward compatible getter for buildings.
+   * Backward compatible getter for entities.
    */
-  get buildings(): Building[] | null { return this.entities; }
-  set buildings(v: Building[] | null) { this.entities = v; }
+  get entities(): Entity[] | null { return this._entities; }
+  set entities(v: Entity[] | null) { this._entities = v; }
 
   /**
    * Resolves a predicate that might be a string (registry name) or a function.
@@ -131,7 +129,7 @@ export class Intervention {
 
   update(opts: Partial<InterventionOptions>) {
     Object.assign(this, opts);
-    if (opts.setupEntity !== undefined) this.setupBuilding = opts.setupEntity;
+    if (opts.setupEntity !== undefined) this.setupEntity = opts.setupEntity;
     if (opts.filter !== undefined) this._filter = opts.filter;
     if (opts.prioritise !== undefined) this._prioritise = opts.prioritise;
     if (opts.transform !== undefined) this._upgrade = opts.transform;
@@ -143,10 +141,10 @@ export class Intervention {
   simulate(entitiesInput: Entity[] | null = null, sharedResources: any = null) {
     if (this.isSeed()) {
       console.warn(`Intervention "${this.name}" is a seed; simulate() skipped.`);
-      return { state: {}, metrics: {}, buildings: [], columns: new Set<string>() };
+      return { state: {}, metrics: {}, entities: [], columns: new Set<string>() };
     }
 
-    const spec = this.propertySpec?.() ?? { columns: [], buildingProperties: [], stateProperties: [], metrics: [] };
+    const spec = this.propertySpec?.() ?? { columns: [], entityProperties: [], stateProperties: [], metrics: [] };
 
     // Prepare entities
     let entities: Entity[] = [];
@@ -155,7 +153,7 @@ export class Intervention {
       entities = new Array(count);
       for (let i = 0; i < count; i++) {
         const row = this.facet.getRow(i);
-        entities[i] = this.setupBuilding ? this.setupBuilding(row) : { ...row };
+        entities[i] = this.setupEntity ? this.setupEntity(row) : { ...row };
       }
     } else {
       entities = entitiesInput.slice();
@@ -166,7 +164,7 @@ export class Intervention {
         const id = row?.id ?? row?.uprn ?? row?.UPRN;
         if (id !== undefined && id !== null) {
           const hit = byId.get(String(id));
-          if (hit && this.setupBuilding) this.setupBuilding(row, hit);
+          if (hit && this.setupEntity) this.setupEntity(row, hit);
         }
       }
     }
@@ -277,11 +275,11 @@ export class Intervention {
           if (stats.entity === undefined) {
             stats.entity = e.id ?? e.uprn ?? e.UPRN;
           }
-          if (stats.building === undefined) stats.building = stats.entity;
+          if (stats.entity === undefined) stats.entity = stats.entity;
           if (stats.year === undefined) stats.year = stepVal;
           if (stats.step === undefined) stats.step = stepVal;
           if (stats.order === undefined) stats.order = ++order;
-          metrics[stepKey].push({ building: stats.building, stats });
+          metrics[stepKey].push({ entity: stats.entity, stats });
         }
       }
 
@@ -293,7 +291,7 @@ export class Intervention {
     const columns = new Set((spec.columns || []).map((c: any) => typeof c === 'string' ? c : c.name));
     this.simulatedFacet = buildSimulatedDataFacet(columns, this.facet, metrics);
 
-    return { state, metrics, buildings: entities, columns };
+    return { state, metrics, entities: entities, columns };
   }
 
   private shuffle(a: any[]) {

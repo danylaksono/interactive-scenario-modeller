@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type SpatialClusterPrioritiserOptions = {
   name?: string;
@@ -27,7 +27,7 @@ export function createSpatialClusterPrioritiserPlugin(
   const infrastructureEfficiencyField = options.infrastructureEfficiencyField ?? "infrastructureEfficiency";
   const stateWeightsKey = options.stateWeightsKey ?? "spatialClusterWeights";
 
-  const prioritise = (a: Building, b: Building, context: SimulationContext) => {
+  const prioritise = (a: Entity, b: Entity, context: SimulationContext) => {
     const weights = ((context.state as any)?.[stateWeightsKey] ?? {}) as {
       clusterDensity?: number;
       infrastructureEfficiency?: number;
@@ -51,7 +51,7 @@ export function createSpatialClusterPrioritiserPlugin(
       name,
       version,
       kind: ["prioritiser"],
-      description: "Prioritises buildings by spatial clustering and infrastructure efficiency",
+      description: "Prioritises entities by spatial clustering and infrastructure efficiency",
       entry: "internal:plugin",
       compat: {
         package: "interactive-scenario-modeller",

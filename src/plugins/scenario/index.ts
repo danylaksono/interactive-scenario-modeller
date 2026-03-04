@@ -1,5 +1,5 @@
 import { registerPlugin, type PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type ScenarioPluginObjectiveWeights = {
   carbonSavingPotential?: number;
@@ -9,7 +9,7 @@ export type ScenarioPluginObjectiveWeights = {
 };
 
 export type ScenarioPluginPolicy = {
-  enabledBuildingTypes?: string[];
+  enabledEntityTypes?: string[];
   minEfficiencyStandard?: number;
 };
 
@@ -24,12 +24,12 @@ export type ScenarioPluginPackOptions = {
 export type ScenarioPluginPack = {
   plugins: PluginRegistration[];
   predicates: {
-    budgetConstraint: (building: Building, context: SimulationContext) => boolean;
-    planningConstraint: (building: Building, context: SimulationContext) => boolean;
-    phasedRollout: (building: Building, context: SimulationContext) => boolean;
-    multiObjectivePrioritization: (building: Building, context: SimulationContext) => boolean;
-    multiObjectivePrioritiser: (a: Building, b: Building, context: SimulationContext) => number;
-    policyEvolution: (building: Building, context: SimulationContext) => boolean;
+    budgetConstraint: (entity: Entity, context: SimulationContext) => boolean;
+    planningConstraint: (entity: Entity, context: SimulationContext) => boolean;
+    phasedRollout: (entity: Entity, context: SimulationContext) => boolean;
+    multiObjectivePrioritization: (entity: Entity, context: SimulationContext) => boolean;
+    multiObjectivePrioritiser: (a: Entity, b: Entity, context: SimulationContext) => number;
+    policyEvolution: (entity: Entity, context: SimulationContext) => boolean;
   };
   register: (plugin: PluginRegistration) => void;
 };
@@ -50,24 +50,24 @@ export function createScenarioPluginPack(
     defaultObjectiveWeights,
   } = options;
 
-  const planningConstraint = (building: Building, context: SimulationContext) => {
-    const listedStatus = (building as any)?.listedStatus;
-    const conservationArea = Boolean((building as any)?.conservationArea);
+  const planningConstraint = (entity: Entity, context: SimulationContext) => {
+    const listedStatus = (entity as any)?.listedStatus;
+    const conservationArea = Boolean((entity as any)?.conservationArea);
     if (conservationArea && listedStatus === "Grade II*") return false;
     if (conservationArea && context.year < 2025) return false;
     return true;
   };
 
-  const budgetConstraint = (building: Building, context: SimulationContext) => {
+  const budgetConstraint = (entity: Entity, context: SimulationContext) => {
     const allocation = context.state.budgetAllocation ?? defaultBudgetAllocation ?? {};
     const spent = context.state.budgetSpent ?? {};
     const yearlyBudget = toNumber(allocation[context.year], 0);
     const spentBudget = toNumber(spent[context.year], 0);
-    const buildingCost = toNumber((building as any)?.estimatedPVCost, 0);
-    return spentBudget + buildingCost <= yearlyBudget;
+    const entityCost = toNumber((entity as any)?.estimatedPVCost, 0);
+    return spentBudget + entityCost <= yearlyBudget;
   };
 
-  const phasedRollout = (building: Building, context: SimulationContext) => {
+  const phasedRollout = (entity: Entity, context: SimulationContext) => {
     const phaseByYear = context.state.phaseByYear ?? {};
     const startYear =
       typeof context.state.phaseStartYear === "number"
@@ -79,11 +79,11 @@ export function createScenarioPluginPack(
         ? phaseByYear[context.year]
         : Math.max(1, context.year - startYear + 1);
 
-    const priorityZone = toNumber((building as any)?.priorityZone, Number.MAX_SAFE_INTEGER);
+    const priorityZone = toNumber((entity as any)?.priorityZone, Number.MAX_SAFE_INTEGER);
     return priorityZone <= currentPhase;
   };
 
-  const multiObjectivePrioritiser = (a: Building, b: Building, context: SimulationContext) => {
+  const multiObjectivePrioritiser = (a: Entity, b: Entity, context: SimulationContext) => {
     const defaults: Required<ScenarioPluginObjectiveWeights> = {
       carbonSavingPotential: 0.4,
       fuelPovertyScore: 0.3,
@@ -97,16 +97,16 @@ export function createScenarioPluginPack(
       ...(context.state.objectiveWeights ?? {}),
     };
 
-    const getScore = (building: Building) =>
-      toNumber((building as any)?.carbonSavingPotential) * weights.carbonSavingPotential +
-      toNumber((building as any)?.fuelPovertyScore) * weights.fuelPovertyScore +
-      toNumber((building as any)?.gridCapacityEfficiency) * weights.gridCapacityEfficiency +
-      toNumber((building as any)?.communityImpact) * weights.communityImpact;
+    const getScore = (entity: Entity) =>
+      toNumber((entity as any)?.carbonSavingPotential) * weights.carbonSavingPotential +
+      toNumber((entity as any)?.fuelPovertyScore) * weights.fuelPovertyScore +
+      toNumber((entity as any)?.gridCapacityEfficiency) * weights.gridCapacityEfficiency +
+      toNumber((entity as any)?.communityImpact) * weights.communityImpact;
 
     return getScore(b) - getScore(a);
   };
 
-  const multiObjectivePrioritization = (building: Building, context: SimulationContext) => {
+  const multiObjectivePrioritization = (entity: Entity, context: SimulationContext) => {
     const defaults: Required<ScenarioPluginObjectiveWeights> = {
       carbonSavingPotential: 0.4,
       fuelPovertyScore: 0.3,
@@ -121,10 +121,10 @@ export function createScenarioPluginPack(
     };
 
     const score =
-      toNumber((building as any)?.carbonSavingPotential) * weights.carbonSavingPotential +
-      toNumber((building as any)?.fuelPovertyScore) * weights.fuelPovertyScore +
-      toNumber((building as any)?.gridCapacityEfficiency) * weights.gridCapacityEfficiency +
-      toNumber((building as any)?.communityImpact) * weights.communityImpact;
+      toNumber((entity as any)?.carbonSavingPotential) * weights.carbonSavingPotential +
+      toNumber((entity as any)?.fuelPovertyScore) * weights.fuelPovertyScore +
+      toNumber((entity as any)?.gridCapacityEfficiency) * weights.gridCapacityEfficiency +
+      toNumber((entity as any)?.communityImpact) * weights.communityImpact;
 
     const minScoreThreshold = toNumber(
       context.state.minScoreThreshold,
@@ -134,21 +134,21 @@ export function createScenarioPluginPack(
     return score >= minScoreThreshold;
   };
 
-  const policyEvolution = (building: Building, context: SimulationContext) => {
+  const policyEvolution = (entity: Entity, context: SimulationContext) => {
     const activePolicies = context.state.activePolicies ?? defaultPolicyTimeline ?? {};
     const policies = activePolicies[context.year];
 
     if (!policies) return true;
 
     if (
-      Array.isArray(policies.enabledBuildingTypes) &&
-      !policies.enabledBuildingTypes.includes((building as any)?.type)
+      Array.isArray(policies.enabledEntityTypes) &&
+      !policies.enabledEntityTypes.includes((entity as any)?.type)
     ) {
       return false;
     }
 
     if (typeof policies.minEfficiencyStandard === "number") {
-      return toNumber((building as any)?.efficiencyRating, -Infinity) >= policies.minEfficiencyStandard;
+      return toNumber((entity as any)?.efficiencyRating, -Infinity) >= policies.minEfficiencyStandard;
     }
 
     return true;

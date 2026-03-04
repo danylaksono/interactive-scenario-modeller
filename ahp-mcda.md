@@ -16,7 +16,7 @@ The library provides a specialized plugin `createMultiCriteriaPrioritiserPlugin`
 ### Basic Implementation
 
 ```typescript
-import { createMultiCriteriaPrioritiserPlugin } from 'interactive-scenario-modeller';
+import { createMultiCriteriaPrioritiserPlugin } from 'interactive-scenario-modeller/plugins/optimization';
 
 const prioritiser = createMultiCriteriaPrioritiserPlugin({
   criteria: [
@@ -31,13 +31,10 @@ const prioritiser = createMultiCriteriaPrioritiserPlugin({
       weight: 0.3, 
       getValue: (e) => e.estimatedCost,
       direction: -1 // Lower cost is better
-    },
-    { 
-      name: 'equity', 
-      weight: 0.2, 
-      getValue: (e) => 10 - e.deprivationDecile
     }
-  ]
+  ],
+  // Optional: property name to store the final calculated priority score back on the entity
+  scoreProperty: 'priority_score'
 });
 
 const intervention = new Intervention('AHP-Driven Rollout', {

@@ -26,16 +26,16 @@ export type FacetLike = {
  * 
  * This is the simplest way to provide data to an Intervention.
  * 
- * @param arr - Array of objects representing buildings/rows
+ * @param arr - Array of objects representing entities/rows
  * @returns A FacetLike adapter for the array
  * 
  * @example
  * ```typescript
- * const buildings = [
- *   { uprn: 1, buildingType: 'detached', emissions: 5000 },
- *   { uprn: 2, buildingType: 'flat', emissions: 2000 }
+ * const entities = [
+ *   { uprn: 1, entityType: 'detached', emissions: 5000 },
+ *   { uprn: 2, entityType: 'flat', emissions: 2000 }
  * ];
- * const facet = arrayAdapter(buildings);
+ * const facet = arrayAdapter(entities);
  * const intervention = new Intervention('Test', { facet, ... });
  * ```
  */

@@ -1,5 +1,5 @@
 import type { PluginRegistration } from "../../plugin";
-import type { Building, SimulationContext } from "../../types";
+import type { Entity, SimulationContext } from "../../types";
 
 export type FinancingModelType = "cash" | "lease" | "ppa";
 
@@ -68,31 +68,31 @@ export function createFinancingModelPlugin(
   const outputNpvCostKey = options.outputNpvCostKey ?? "npvCost";
   const outputModelTypeKey = options.outputModelTypeKey ?? "modelType";
 
-  const upgrade = (building: Building, context: SimulationContext) => {
-    const capex = toNumber((building as any)?.[capexField], 0);
+  const upgrade = (entity: Entity, context: SimulationContext) => {
+    const capex = toNumber((entity as any)?.[capexField], 0);
 
     const stateScenario = (context.state as any)?.[scenarioStateKey] ?? {};
-    const buildingScenario = (building as any)?.[scenarioField] ?? {};
+    const entityScenario = (entity as any)?.[scenarioField] ?? {};
 
     const modelType =
-      (buildingScenario.modelType as FinancingModelType | undefined) ??
+      (entityScenario.modelType as FinancingModelType | undefined) ??
       (stateScenario.modelType as FinancingModelType | undefined) ??
       "cash";
 
     const termYears = toNumber(
-      buildingScenario.termYears ?? stateScenario.termYears,
+      entityScenario.termYears ?? stateScenario.termYears,
       20,
     );
     const interestRate = toNumber(
-      buildingScenario.interestRate ?? stateScenario.interestRate,
+      entityScenario.interestRate ?? stateScenario.interestRate,
       0.05,
     );
     const discountRate = toNumber(
-      buildingScenario.discountRate ?? stateScenario.discountRate,
+      entityScenario.discountRate ?? stateScenario.discountRate,
       0.035,
     );
     const escalationRate = toNumber(
-      buildingScenario.escalationRate ?? stateScenario.escalationRate,
+      entityScenario.escalationRate ?? stateScenario.escalationRate,
       0,
     );
 
@@ -104,11 +104,11 @@ export function createFinancingModelPlugin(
       npvCost = npvOfEscalatingSeries(annualPayment, termYears, discountRate, escalationRate);
     } else if (modelType === "ppa") {
       const ratePerKwh = toNumber(
-        buildingScenario.ppaRatePerKwh ?? stateScenario.ppaRatePerKwh,
+        entityScenario.ppaRatePerKwh ?? stateScenario.ppaRatePerKwh,
         0,
       );
       const expectedAnnualGenerationKwh = toNumber(
-        buildingScenario.expectedAnnualGenerationKwh ??
+        entityScenario.expectedAnnualGenerationKwh ??
           stateScenario.expectedAnnualGenerationKwh,
         0,
       );

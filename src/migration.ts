@@ -54,10 +54,10 @@ export function migrateSavedInterventions(savedInterventions: any[], opts: Migra
           if (typeof compiled !== 'function') {
             predicateEntry.error = 'compiled_not_function';
           } else {
-            // Wrap the compiled function to match the new (building, context) signature
+            // Wrap the compiled function to match the new (entity, context) signature
             // while passing context.state as the second argument for backward compatibility.
             const wrapped = (arg1: any, arg2: any, arg3: any) => {
-              // arg1 is building, arg2 is context
+              // arg1 is entity, arg2 is context
               // old prioritise: (b1, b2, state)
               // new prioritise: (b1, b2, context)
               // old filter/upgrade: (b, state)
