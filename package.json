@@ -6,6 +6,43 @@
     "main": "dist/index.cjs.js",
     "module": "dist/index.esm.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./plugins": {
+            "import": "./dist/plugins/installers.js",
+            "require": "./dist/plugins/installers.cjs.js",
+            "types": "./dist/plugins/installers.d.ts"
+        },
+        "./plugins/grid": {
+            "import": "./dist/plugins/grid/index.js",
+            "require": "./dist/plugins/grid/index.cjs.js",
+            "types": "./dist/plugins/grid/index.d.ts"
+        },
+        "./plugins/financial": {
+            "import": "./dist/plugins/financial/index.js",
+            "require": "./dist/plugins/financial/index.cjs.js",
+            "types": "./dist/plugins/financial/index.d.ts"
+        },
+        "./plugins/geographic": {
+            "import": "./dist/plugins/geographic/index.js",
+            "require": "./dist/plugins/geographic/index.cjs.js",
+            "types": "./dist/plugins/geographic/index.d.ts"
+        },
+        "./plugins/optimization": {
+            "import": "./dist/plugins/optimization/index.js",
+            "require": "./dist/plugins/optimization/index.cjs.js",
+            "types": "./dist/plugins/optimization/index.d.ts"
+        },
+        "./plugins/transport": {
+            "import": "./dist/plugins/transport/index.js",
+            "require": "./dist/plugins/transport/index.cjs.js",
+            "types": "./dist/plugins/transport/index.d.ts"
+        }
+    },
     "scripts": {
         "build": "tsup",
         "dev": "tsup --watch",
@@ -15,13 +52,21 @@
     },
     "tsup": {
         "entry": [
-            "src/index.ts"
+            "src/index.ts",
+            "src/plugins/installers.ts",
+            "src/plugins/grid/index.ts",
+            "src/plugins/financial/index.ts",
+            "src/plugins/geographic/index.ts",
+            "src/plugins/optimization/index.ts",
+            "src/plugins/transport/index.ts"
         ],
         "format": [
             "cjs",
             "esm"
         ],
         "dts": true,
+        "splitting": true,
+        "clean": true,
         "outDir": "dist"
     },
     "files": [

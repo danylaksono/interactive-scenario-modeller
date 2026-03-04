@@ -15,6 +15,7 @@ Every intervention is defined by three core functions (predicates) that run iter
 ## Features
 
 - **Domain Agnostic**: Works with any "Entity" (Buildings, Parcels, Habitat Patches, Fleet Corridors).
+- **Slim & Modular**: Import only the core engine (~25KB) or add domain plugins manually to keep bundles small.
 - **Spatial First**: Geometries are first-class properties. Carry GeoJSON through the simulation and use spatial predicates (`within`, `distanceTo`).
 - **Resource Layer**: Global `resources` API for cross-intervention constraints (e.g., "max 5 upgrades per km²", "global installer headroom", "regional budget envelopes").
 - **Flexible Timesteps**: Configure the simulation loop by years, months, or custom event steps.
@@ -26,6 +27,40 @@ Every intervention is defined by three core functions (predicates) that run iter
 ```bash
 npm install interactive-scenario-modeller
 ```
+
+## Installation & Modular Usage
+
+The library is designed to be as slim as possible. You can import just the core engine or include specific domain plugins manually to keep your production bundle small.
+
+### Core Architecture (Slim)
+Best for general resource allocation, filtering, and "what-if" simulations.
+```ts
+import { SimulationRunner, Intervention } from 'interactive-scenario-modeller';
+```
+
+### Domain-Specific Plugins
+Import only the logic you need for your target domain:
+```ts
+// Energy & Grid constraints
+import { createSubstationCapacityGatePlugin } from 'interactive-scenario-modeller/plugins/grid';
+
+// Financial & Budgeting
+import { createBudgetSpendTrackerPlugin } from 'interactive-scenario-modeller/plugins/financial';
+
+// Spatial & Geographic Prioritisation
+import { createSpatialClusterPrioritiserPlugin } from 'interactive-scenario-modeller/plugins/geographic';
+
+// Optimization (MCDA / Carbon Targets)
+import { createMultiCriteriaPrioritiserPlugin } from 'interactive-scenario-modeller/plugins/optimization';
+```
+
+### Full Bundle (Batteries Included)
+If you need everything or are just prototyping:
+```ts
+import { installAllBundles } from 'interactive-scenario-modeller/plugins';
+```
+
+## Example Usage
 
 ```ts
 import { Intervention, arrayAdapter, toGeoJSON } from 'interactive-scenario-modeller';

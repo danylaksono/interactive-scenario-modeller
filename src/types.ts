@@ -6,7 +6,7 @@ export type Entity = { [k: string]: any } & {
 export type Building = Entity;
 export type State = { [k: string]: any };
 export type Metric = { [k: string]: any };
-export type Metrics = { [year: string]: Array<{ building: string | number, stats: Metric }> };
+export type Metrics = { [year: string]: Array<{ building?: string | number, entity?: string | number, stats: Metric }> };
 
 /**
  * Standard context passed to all predicates and lifecycle hooks.
