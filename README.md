@@ -28,6 +28,60 @@ Every intervention is defined by three core functions (predicates) that run iter
 npm install interactive-scenario-modeller
 ```
 
+## LLM Tool Calling (OpenRouter)
+
+This package includes a first-class LLM tool-calling contract for JSON Schema based function tools.
+
+Use this when integrating with OpenRouter (or any function-calling LLM runtime) where the model returns structured JSON arguments and your host app executes tools.
+
+### LLM Entry Points
+
+- `getLlmToolDefinitions()` returns OpenRouter-compatible function tool definitions.
+- `createLlmToolRuntime()` returns a stateful runtime for executing tool calls.
+- `runtime.executeToolCall({ name, args })` dispatches one tool call and returns structured `{ success, data, error }` JSON.
+
+```ts
+import {
+	createLlmToolRuntime,
+	getLlmToolDefinitions,
+} from 'interactive-scenario-modeller';
+
+const runtime = createLlmToolRuntime();
+const tools = getLlmToolDefinitions();
+
+// Provide tools to OpenRouter request
+// Then execute model-returned calls:
+const result = runtime.executeToolCall({
+	name: 'simulateIntervention',
+	args: { interventionId: 'pv-rollout-2026' },
+});
+```
+
+### Canonical LLM Tools
+
+- `createFacetFromRows`
+- `installAllPlugins`
+- `installScenarioModellerPresets`
+- `createInterventionFromRefs`
+- `simulateIntervention`
+- `getSimulationResult`
+- `toGeoJSON`
+- `listPredicates`
+- `listPlugins`
+
+### Host/UI Tools Stay Outside This Package
+
+UI and map rendering tools such as `addH3Layer` should stay in your host application. Typical flow:
+
+1. Use this package to simulate and produce GeoJSON (`toGeoJSON`).
+2. Pass returned GeoJSON to host tools (for example `addH3Layer`) that mutate map layers/sources.
+
+### Contract, Governance, and Example
+
+- Contract doc: [docs/llm-tool-calling-contract.md](docs/llm-tool-calling-contract.md)
+- End-to-end example: [examples/openrouter-tool-calling.ts](examples/openrouter-tool-calling.ts)
+- Agent/contributor guardrails: [AGENTS.md](AGENTS.md)
+
 ## Installation & Modular Usage
 
 The library is designed to be as slim as possible. You can import just the core engine or include specific domain plugins manually to keep your production bundle small.
