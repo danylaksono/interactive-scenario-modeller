@@ -92,7 +92,7 @@ export function buildSimulatedDataFacet(
     for (const item of items) {
       if (!item) continue;
       const stats = item.stats ?? {};
-      const id = item.entity ?? item.entity ?? stats.uprn ?? stats.id ?? stats.entity ?? stats.entity;
+      const id = item.entity ?? item.building ?? stats.uprn ?? stats.id ?? stats.entity;
       if (id == null) continue;
       metricEntries.push({ id: String(id), year: yearKey, stats });
       pushStatsKeys(stats);

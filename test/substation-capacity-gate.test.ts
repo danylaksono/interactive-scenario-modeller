@@ -98,4 +98,39 @@ describe('Substation capacity gate plugin', () => {
     const result = intervention.simulate();
     expect(result.metrics['2026']).toHaveLength(1);
   });
+
+  it('selects capacities from scenario tables when activeScenarioKey is set', () => {
+    const pluginName = `grid-dfes-${Date.now()}`;
+    registerPlugin(
+      createSubstationCapacityGatePlugin({
+        name: pluginName,
+        activeScenarioKey: 'dfesActiveScenario',
+        capacityByScenarioKey: 'substationCapacitiesByScenario',
+      }),
+    );
+
+    const facet = arrayAdapter([
+      { uprn: 'a', substationId: 'S1', projectedDemandIncreaseKw: 45 },
+      { uprn: 'b', substationId: 'S1', projectedDemandIncreaseKw: 60 },
+    ]);
+
+    const intervention = new Intervention('dfes-cap', {
+      facet,
+      startYear: 2026,
+      endYear: 2026,
+      filter: `${pluginName}:constraint`,
+      init: (context) => {
+        context.state.dfesActiveScenario = 'Tight';
+        context.state.substationCapacitiesByScenario = {
+          Tight: { 2026: { S1: 50 } },
+          Loose: { 2026: { S1: 500 } },
+        };
+      },
+      upgrade: () => ({ ok: true }),
+    });
+
+    const result = intervention.simulate();
+    expect(result.metrics['2026']).toHaveLength(1);
+    expect(result.state.substationLoads[2026].S1).toBe(45);
+  });
 });

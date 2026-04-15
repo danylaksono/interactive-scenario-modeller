@@ -9,6 +9,14 @@ export type SubstationCapacityGatePluginOptions = {
   capacityStateKey?: string;
   loadStateKey?: string;
   strictMissingCapacity?: boolean;
+  /**
+   * When set with `capacityByScenarioKey`, resolves the capacity table from
+   * `state[capacityByScenarioKey][String(state[activeScenarioKey])]` before
+   * falling back to `capacityStateKey`. Supports DFES-style scenario tables.
+   */
+  activeScenarioKey?: string;
+  /** Nested capacities keyed by scenario name, then the same shapes as `capacityStateKey`. */
+  capacityByScenarioKey?: string;
 };
 
 function toNumber(value: unknown, fallback = 0): number {
@@ -41,6 +49,30 @@ function resolveCapacity(
   return null;
 }
 
+function pickCapacityRoot(
+  state: Record<string, any>,
+  options: {
+    capacityStateKey: string;
+    activeScenarioKey?: string;
+    capacityByScenarioKey?: string;
+  },
+): unknown {
+  const scenarioKey = options.activeScenarioKey;
+  const byScenarioKey = options.capacityByScenarioKey;
+  if (scenarioKey && byScenarioKey) {
+    const scenarioRaw = state[scenarioKey];
+    const scenarioName = scenarioRaw === undefined || scenarioRaw === null ? "" : String(scenarioRaw);
+    if (scenarioName) {
+      const byScenario = state[byScenarioKey];
+      if (byScenario && typeof byScenario === "object") {
+        const table = (byScenario as Record<string, unknown>)[scenarioName];
+        if (table !== undefined) return table;
+      }
+    }
+  }
+  return state[options.capacityStateKey];
+}
+
 export function createSubstationCapacityGatePlugin(
   options: SubstationCapacityGatePluginOptions = {},
 ): PluginRegistration {
@@ -51,6 +83,8 @@ export function createSubstationCapacityGatePlugin(
   const capacityStateKey = options.capacityStateKey ?? "substationCapacities";
   const loadStateKey = options.loadStateKey ?? "substationLoads";
   const strictMissingCapacity = options.strictMissingCapacity ?? true;
+  const activeScenarioKey = options.activeScenarioKey;
+  const capacityByScenarioKey = options.capacityByScenarioKey;
 
   const constraint = (entity: Entity, context: SimulationContext) => {
     const state = context.state as Record<string, any>;
@@ -66,7 +100,11 @@ export function createSubstationCapacityGatePlugin(
 
     const demandIncrement = toNumber((entity as any)?.[demandIncrementField], 0);
 
-    const capacities = state[capacityStateKey];
+    const capacities = pickCapacityRoot(state, {
+      capacityStateKey,
+      activeScenarioKey,
+      capacityByScenarioKey,
+    });
     const capacity = resolveCapacity(capacities, year, substationId);
 
     if (capacity === null) {

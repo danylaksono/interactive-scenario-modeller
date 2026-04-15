@@ -24,7 +24,7 @@ describe('Policy timeline validator plugin', () => {
       init: (context) => {
         context.state.activePolicies = {
           2026: {
-            enabledBuildingTypes: ['residential', 'public'],
+            enabledEntityTypes: ['residential', 'public'],
             minEfficiencyStandard: 60,
           },
         };
@@ -50,7 +50,7 @@ describe('Policy timeline validator plugin', () => {
       init: (context) => {
         context.state.activePolicies = {
           2026: {
-            enabledBuildingTypes: [123],
+            enabledEntityTypes: [123] as unknown as string[],
           },
         };
       },
@@ -80,7 +80,7 @@ describe('Policy timeline validator plugin', () => {
       init: (context) => {
         context.state.activePolicies = {
           2026: {
-            enabledBuildingTypes: ['residential'],
+            enabledEntityTypes: ['residential'],
           },
         };
         context.state.requiredPolicyYears = [2026, 2027];

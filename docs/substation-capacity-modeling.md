@@ -10,6 +10,10 @@ The system supports complex conditional scenarios through:
 - **Sequential interventions**: Multiple phases building on previous results
 - **Registry system**: Reusable constraint and upgrade functions
 
+### Scenario-specific capacity (DFES-style)
+
+`createSubstationCapacityGatePlugin` supports optional `activeScenarioKey` and `capacityByScenarioKey` on `context.state`. When `state[activeScenarioKey]` is a non-empty string, capacities are read from `state[capacityByScenarioKey][scenarioName]` using the same inner layouts as the default `substationCapacities` object (flat per-substation map or year-keyed buckets). If the scenario table is missing, the plugin falls back to `substationCapacities`. Use [`buildDfesCapacityByScenario`](../src/adapters/uk/index.ts) (package export `interactive-scenario-modeller/adapters/uk`) to assemble nested tables from joined CSV rows.
+
 ## Required Data
 
 ### 1. Substation Capacity Data

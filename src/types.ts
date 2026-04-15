@@ -5,7 +5,15 @@ export type Entity = { [k: string]: any } & {
 };
 export type State = { [k: string]: any };
 export type Metric = { [k: string]: any };
-export type Metrics = { [year: string]: Array<{ id?: string | number, entity?: string | number, stats: Metric }> };
+export type Metrics = {
+  [year: string]: Array<{
+    id?: string | number;
+    entity?: string | number;
+    /** Legacy alias for `entity` on metric rows */
+    building?: string | number;
+    stats: Metric;
+  }>;
+};
 
 /**
  * Standard context passed to all predicates and lifecycle hooks.

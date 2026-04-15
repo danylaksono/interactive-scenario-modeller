@@ -1,3 +1,5 @@
+import type { Entity, SimulationContext } from "./types";
+
 export class DataTable {
   columns: string[];
   data: any[];
@@ -24,8 +26,18 @@ export function compilePredicate(code: string): Function {
 }
 
 /**
+ * Combines multiple constraint-style predicates so every function must pass.
+ * Useful when a flexibility “prepare” step must run before a grid capacity gate.
+ */
+export function combineConstraints(
+  ...predicates: Array<(entity: Entity, context: SimulationContext) => boolean>
+): (entity: Entity, context: SimulationContext) => boolean {
+  return (entity, context) => predicates.every((fn) => fn(entity, context));
+}
+
+/**
  * Converts a simulated facet to a GeoJSON FeatureCollection if geometries are present.
- * 
+ *
  * @param facet - A facet-like object (e.g. from intervention.simulatedFacet)
  * @returns GeoJSON FeatureCollection or null if no geometries found
  */

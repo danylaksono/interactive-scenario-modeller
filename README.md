@@ -21,6 +21,7 @@ Every intervention is defined by three core functions (predicates) that run iter
 - **Flexible Timesteps**: Configure the simulation loop by years, months, or custom event steps.
 - **Data Agnostic**: Interface with any data source (CSV, JSON, GeoJSON, SQL) via the Facet Adapter pattern.
 - **Pure Client-Side**: Run complex simulations (50k+ features) directly in the browser with no backend required.
+- **LAEP-oriented helpers**: `installLaepPresets()`, UK field normalisers (`interactive-scenario-modeller/adapters/uk`), and a seven-stage mapping guide in `docs/laep-seven-stage-mapping.md`.
 
 ## Quickstart
 

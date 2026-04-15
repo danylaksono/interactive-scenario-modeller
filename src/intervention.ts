@@ -29,6 +29,11 @@ export type InterventionOptions = {
   transform?: PredicateTransform;
   /** Alias for upgrade. Transformation predicate: applies change and returns metric deltas. */
   apply?: PredicateTransform;
+  /**
+   * When non-empty, each entity uses the first transform in the list that returns a
+   * non-empty delta (keys other than `year` / `step`). Ignores `upgrade` / `transform` / `apply` for applying changes.
+   */
+  upgradeChain?: Array<PredicateUpgrade | string>;
   /** Initialization hook: called once before simulation starts */
   init?: (context: SimulationContext) => void;
   /** Finalization hook: called once after simulation completes */
@@ -54,6 +59,7 @@ export class Intervention {
   private _filter: PredicateFilter;
   private _prioritise: PredicatePrioritise;
   private _upgrade: PredicateUpgrade;
+  private _upgradeChain: Array<PredicateUpgrade | string> | null;
   
   init: (context: SimulationContext) => void;
   finalise: (context: SimulationContext) => void;
@@ -75,6 +81,8 @@ export class Intervention {
     this._filter = opts.filter ?? (() => true);
     this._prioritise = opts.prioritise ?? (() => 0);
     this._upgrade = opts.transform ?? opts.apply ?? opts.upgrade ?? (() => ({}));
+    this._upgradeChain =
+      Array.isArray(opts.upgradeChain) && opts.upgradeChain.length > 0 ? opts.upgradeChain : null;
     
     this.init = opts.init ?? (() => {});
     this.finalise = opts.finalise ?? (() => {});
@@ -112,6 +120,11 @@ export class Intervention {
     return null;
   }
 
+  private isNonEmptyUpgradeDelta(delta: any) {
+    if (!delta || typeof delta !== "object") return false;
+    return Object.keys(delta).some((k) => k !== "year" && k !== "step");
+  }
+
   get filter(): PredicateFilter { return this._filter; }
   set filter(v: PredicateFilter) { this._filter = v; }
   get prioritise(): PredicatePrioritise { return this._prioritise; }
@@ -135,6 +148,10 @@ export class Intervention {
     if (opts.transform !== undefined) this._upgrade = opts.transform;
     else if (opts.apply !== undefined) this._upgrade = opts.apply;
     else if (opts.upgrade !== undefined) this._upgrade = opts.upgrade;
+    if (opts.upgradeChain !== undefined) {
+      this._upgradeChain =
+        Array.isArray(opts.upgradeChain) && opts.upgradeChain.length > 0 ? opts.upgradeChain : null;
+    }
     return this;
   }
 
@@ -219,7 +236,7 @@ export class Intervention {
 
     // Resolve predicates once if possible, or inside loop if state-dependent
     const filterFn = this.resolvePredicate(this._filter);
-    const upgradeFn = this.resolvePredicate(this._upgrade);
+    const upgradeFn = this._upgradeChain?.length ? null : this.resolvePredicate(this._upgrade);
     const prioritiseFn = this._prioritise === "random" ? "random" : this.resolvePredicate(this._prioritise);
 
     const start = this.startYear ?? 0;
@@ -264,7 +281,14 @@ export class Intervention {
         if (!e) continue;
         let delta: any = {};
         try {
-          if (upgradeFn) {
+          if (this._upgradeChain?.length) {
+            for (const step of this._upgradeChain) {
+              const fn = this.resolvePredicate(step as any);
+              if (!fn) continue;
+              delta = fn(e, context) || {};
+              if (this.isNonEmptyUpgradeDelta(delta)) break;
+            }
+          } else if (upgradeFn) {
             delta = upgradeFn(e, context) || {};
           }
         } catch (e) {
@@ -279,7 +303,7 @@ export class Intervention {
           if (stats.year === undefined) stats.year = stepVal;
           if (stats.step === undefined) stats.step = stepVal;
           if (stats.order === undefined) stats.order = ++order;
-          metrics[stepKey].push({ entity: stats.entity, stats });
+          metrics[stepKey].push({ entity: stats.entity, building: stats.entity, stats });
         }
       }
 

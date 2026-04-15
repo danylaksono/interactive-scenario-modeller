@@ -41,6 +41,11 @@
             "import": "./dist/plugins/transport/index.js",
             "require": "./dist/plugins/transport/index.cjs.js",
             "types": "./dist/plugins/transport/index.d.ts"
+        },
+        "./adapters/uk": {
+            "import": "./dist/adapters/uk/index.js",
+            "require": "./dist/adapters/uk/index.cjs.js",
+            "types": "./dist/adapters/uk/index.d.ts"
         }
     },
     "scripts": {
@@ -58,7 +63,8 @@
             "src/plugins/financial/index.ts",
             "src/plugins/geographic/index.ts",
             "src/plugins/optimization/index.ts",
-            "src/plugins/transport/index.ts"
+            "src/plugins/transport/index.ts",
+            "src/adapters/uk/index.ts"
         ],
         "format": [
             "cjs",
